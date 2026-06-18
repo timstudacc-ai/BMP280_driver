@@ -1,4 +1,4 @@
-# Скомпільовані файли та папки збірки (CMake)
+# Compiled files and CMake build directories
 build/
 cmake-build-*/
 out/
@@ -6,12 +6,12 @@ out/
 CMakeCache.txt
 CMakeFiles/
 
-# Файли конфігурації редакторів (VS Code, CLion, etc.)
+# Editor configuration files (VS Code, CLion, etc.)
 .vscode/
 .idea/
 *.code-workspace
 
-# Бінарники та об'єктні файли
+# Binaries and object files
 *.o
 *.obj
 *.elf
@@ -21,9 +21,9 @@ CMakeFiles/
 *.su
 *.d
 
-# OS специфічні файли
+# OS specific files
 .DS_Store
 Thumbs.db
 
-# PlatformIO (якщо ви колись його використовували)
+# PlatformIO (if previously used)
 .pio/

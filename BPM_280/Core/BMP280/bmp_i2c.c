@@ -1,7 +1,11 @@
-#include "bmp_i2c.h" // Підключаємо ваш заголовний файл!
+/**
+ * @file bmp_i2c.c
+ * @brief I2C porting layer implementation for BMP280 sensor
+ */
+#include "bmp_I2c.h" 
 #include "i2c.h"
-
-/* Згідно з bmp.h, функції мають повертати int8_t */
+// added my own shit and remoced other shit
+/* According to bmp.h, read/write functions must match the typedef signatures */
 
 BMP280_StatusTypeDef BMP_I2C_Init(Bmp_280_Interface *bmp_device, void *device_address){
 
@@ -13,7 +17,7 @@ BMP280_StatusTypeDef BMP_I2C_Init(Bmp_280_Interface *bmp_device, void *device_ad
     bmp_device->bus_read_IT = BMP280_I2C_Read_IT;
     bmp_device->intf_ptr = device_address;
     
-    /* Відразу викликаємо головний драйвер */
+    /* Call the main driver initialization immediately */
     return BMP280_Init(bmp_device);
 }
 
@@ -22,9 +26,9 @@ BMP280_StatusTypeDef BMP280_I2C_Read(void *intf_ptr, uint8_t reg_addr, uint8_t *
     uint8_t dev_addr = (*(uint8_t*)intf_ptr);
     if(HAL_I2C_Mem_Read(&hi2c2, (dev_addr << 1U), reg_addr, 1, data, len, 100) == HAL_OK)
     {
-        return  BMP280_OK; // Успіх
+        return  BMP280_OK; /* Success */
     }
-    return BMP280_ERR_I2C; // Помилка
+    return BMP280_ERR_I2C; /* Error */
 }
 
 BMP280_StatusTypeDef BMP280_I2C_Write(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len)
