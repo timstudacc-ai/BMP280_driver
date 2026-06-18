@@ -147,8 +147,8 @@ extern "C"
         int16_t dig_P8;
         int16_t dig_P9;
     } BMP280_CalibData;
-    typedef int8_t (*BMP280_Read_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
-    typedef int8_t (*BMP280_Write_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+    typedef BMP280_StatusTypeDef (*BMP280_Read_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+    typedef BMP280_StatusTypeDef (*BMP280_Write_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
     typedef struct {
         BMP280_Read_func bus_read;
         BMP280_Write_func bus_write;
@@ -162,7 +162,7 @@ extern "C"
      * @param  hi2c Pointer to a I2C_HandleTypeDef structure.
      * @retval BMP280_StatusTypeDef status of the initialization.
      */
-    BMP280_StatusTypeDef BMP280_Init(I2C_HandleTypeDef *hi2c);
+    BMP280_StatusTypeDef BMP280_Init(Bmp_280_Interface *device);
 
     /**
      * @brief  Sets the sensor's power mode.
@@ -208,9 +208,9 @@ extern "C"
     uint32_t BMP280_Convert_RawPressure(void);
 
     /**
-     * @brief  I2C RX Complete Callback to update state machine.
+     * @brief  RX Complete Callback to update state machine.
      */
-    void BMP280_I2C_RxCpltCallback(I2C_HandleTypeDef *hi2c);
+    void BMP280_RxCpltCallback(void);
 
     /* USER CODE END Prototypes */
 

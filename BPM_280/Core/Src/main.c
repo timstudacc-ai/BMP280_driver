@@ -30,6 +30,7 @@
 #include "bmp.h"
 #include "uart_ring_buffer.h"
 #include "uart_dma_manager.h"
+#include "bmp_I2c.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -102,7 +103,9 @@ int main(void)
   MX_I2C2_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  bmp_status = BMP280_Init(&hi2c2);
+  uint8_t device_address = BMP280_DEVICE_ADRESS;
+  Bmp_280_Interface bmp_interface;
+  bmp_status = BMP_I2C_Init(&bmp_interface, &device_address);
 
   if (bmp_status == BMP280_OK)
   {
@@ -231,7 +234,7 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
   if (hi2c->Instance == I2C2)
   {
-    BMP280_I2C_RxCpltCallback(hi2c);
+    BMP280_RxCpltCallback();
   }
 }
 /* USER CODE END 4 */
