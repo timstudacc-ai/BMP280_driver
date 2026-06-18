@@ -1,0 +1,38 @@
+# Папка збірки CMake (out-of-source build)
+build/
+/build/
+
+# Файли та кеші CMake (якщо випадково запустили in-source build)
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+compile_commands.json
+.cmake/
+
+# Зібрані об'єктні файли та прошивки
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.su
+*.a
+
+# Резервні копії STM32CubeMX
+*.bak
+*.ioc.bak
+
+# Налаштування Visual Studio Code (IntelliSense та кеші)
+.vscode/
+*.code-workspace
+
+# Специфічні файли операційних систем
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

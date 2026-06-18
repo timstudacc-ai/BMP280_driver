@@ -1,0 +1,13 @@
+{
+    "configurations": [
+        {
+            "name": "STM32-ARM-GCC",
+            "compilerPath": "arm-none-eabi-gcc",
+            "compileCommands": "${workspaceFolder}/BPM_280/build/Debug/compile_commands.json",
+            "cStandard": "c11",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "linux-gcc-arm"
+        }
+    ],
+    "version": 4
+}
