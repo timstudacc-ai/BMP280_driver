@@ -1,3 +1,7 @@
+/**
+ * @file bmp.h
+ * @brief BMP280 Sensor Driver Header
+ */
 #ifndef BMP280_H
 #define BMP280_H
 
@@ -113,6 +117,9 @@ extern "C"
 
     /* USER CODE BEGIN Prototypes */
 
+    /**
+     * @brief Status enumeration for BMP280 operations
+     */
     typedef enum
     {
         BMP280_OK = 0x00U,
@@ -122,6 +129,9 @@ extern "C"
         BMP280_ERR_BUSY = 0x04U
     } BMP280_StatusTypeDef;
 
+    /**
+     * @brief State machine enumeration for non-blocking reads
+     */
     typedef enum
     {
         BMP280_READ_STATE_IDLE = 0x00U,
@@ -132,6 +142,9 @@ extern "C"
         BMP280_READ_STATE_ERROR
     } BMP280_ReadStateTypeDef;
 
+    /**
+     * @brief Calibration data structure for BMP280 compensation
+     */
     typedef struct
     {
         uint16_t dig_T1;
@@ -147,8 +160,19 @@ extern "C"
         int16_t dig_P8;
         int16_t dig_P9;
     } BMP280_CalibData;
+    /**
+     * @brief Function pointer for synchronous reading
+     */
     typedef BMP280_StatusTypeDef (*BMP280_Read_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+    
+    /**
+     * @brief Function pointer for synchronous writing
+     */
     typedef BMP280_StatusTypeDef (*BMP280_Write_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+    
+    /**
+     * @brief Hardware abstraction interface structure
+     */
     typedef struct {
         BMP280_Read_func bus_read;
         BMP280_Write_func bus_write;

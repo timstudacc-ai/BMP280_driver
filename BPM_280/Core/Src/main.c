@@ -109,7 +109,7 @@ int main(void)
 
   if (bmp_status == BMP280_OK)
   {
-    // Налаштовуємо датчик
+    /* Configure the sensor */
     BMP280_SetOversampling(BMP280_OSRS_T_2X, BMP280_OSRS_P_16X);
     BMP280_SetConfig(BMP280_STANDBY_250_MS, BMP280_FILTER_COEFF_4);
     BMP280_SetMode(BMP280_MODE_NORMAL);

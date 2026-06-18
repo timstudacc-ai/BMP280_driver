@@ -1,3 +1,7 @@
+/**
+ * @file bmp.c
+ * @brief BMP280 Sensor Driver Implementation
+ */
 #include "bmp.h"
 #include <stdint.h>
 #include <stddef.h>
