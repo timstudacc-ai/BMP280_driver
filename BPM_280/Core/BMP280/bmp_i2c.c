@@ -1,6 +1,6 @@
 #include "bmp_i2c.h" // Підключаємо ваш заголовний файл!
 #include "i2c.h"
-
+//ffdhffgufgue
 /* Згідно з bmp.h, функції мають повертати int8_t */
 
 BMP280_StatusTypeDef BMP_I2C_Init(Bmp_280_Interface *bmp_device, void *device_address){
