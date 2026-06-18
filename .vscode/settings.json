@@ -1,5 +1,0 @@
-{
-    "cmake.sourceDirectory": "D:/STm32 projects/BMP280/BPM_280",
-    "cortex-debug.liveWatchRefreshRate": 300,
-    "cortex-debug.armToolchainPath": "D:\\cross-compiler\\gcc-arm-none-eabi-10.3-2021.10\\bin"
-}
