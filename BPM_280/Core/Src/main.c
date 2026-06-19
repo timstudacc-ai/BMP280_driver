@@ -115,15 +115,39 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  Bmp_280_Interface bmp_device;
-  SPI_BMP_CS_PIN cs_pin;
   uint32_t last_tick = 0;
   uint32_t test_counter = 0;
-  bmp_status = BMP280_SPI_Init(&bmp_device, &cs_pin);
-  bmp_status = BMP280_Init(&bmp_device);
-  bmp_status = BMP280_SetMode(&bmp_device, BMP280_MODE_NORMAL);
-  bmp_status = BMP280_SetOversampling(&bmp_device, BMP280_OSRS_T_2X, BMP280_OSRS_P_2X);
-  bmp_status = BMP280_SetConfig(&bmp_device, BMP280_STANDBY_250_MS, BMP280_FILTER_COEFF_4);
+   if (BMP280_CS_PIN_INIT(&cs_pin, GPIOB, GPIO_PIN_0) != BMP280_OK)
+  {
+      bmp_status = BMP280_ERR_SPI;
+      Error_Handler();
+  }
+  if (BMP280_SPI_Init(&bmp_device, &cs_pin) != BMP280_OK)
+  {
+      bmp_status = BMP280_ERR_SPI;
+      Error_Handler();
+  }
+  
+  if (BMP280_Init(&bmp_device) != BMP280_OK)
+  {
+      bmp_status = BMP280_ERR_SPI;
+      Error_Handler();
+  }
+  if( BMP280_SetMode(&bmp_device, BMP280_MODE_NORMAL) != BMP280_OK)
+  {
+      bmp_status = BMP280_ERR_SPI;
+      Error_Handler();
+  }
+  if (BMP280_SetOversampling(&bmp_device, BMP280_OSRS_T_2X, BMP280_OSRS_P_2X) != BMP280_OK)
+  {
+      bmp_status = BMP280_ERR_SPI;
+      Error_Handler();
+  }
+  if (BMP280_SetConfig(&bmp_device, BMP280_STANDBY_250_MS, BMP280_FILTER_COEFF_4) != BMP280_OK)
+  {
+      bmp_status = BMP280_ERR_SPI;
+      Error_Handler();
+  }
 
   /* 1. Initialize the Ring Buffers */
   rb_init(&rx_ring_buffer);

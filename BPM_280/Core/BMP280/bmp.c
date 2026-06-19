@@ -249,6 +249,7 @@ BMP280_StatusTypeDef BMP280_ReadPressure_IT(Bmp_280_Interface *device)
     {
         return BMP280_ERR_BUSY;
     }
+    bmp280_read_state = BMP280_READ_STATE_PRESS_BUSY;
 
     if (device->bus_read_IT(device->intf_ptr, BMP280_REG_PRESS_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
     {
