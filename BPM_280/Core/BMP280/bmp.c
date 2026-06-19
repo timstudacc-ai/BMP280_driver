@@ -7,11 +7,11 @@
 #include <stddef.h>
 
 /* USER CODE BEGIN Private variables */
-static Bmp_280_Interface *bmp_dev = NULL;
+
 
 /* Volatile variables for IT-based non-blocking reads */
 static volatile BMP280_ReadStateTypeDef bmp280_read_state = BMP280_READ_STATE_IDLE;
-static volatile uint8_t bmp280_data_buffer[3]; /* Used for holding 3 bytes of raw temp or press data */
+static volatile uint8_t bmp280_data_buffer[3] = {0}; /* Used for holding 3 bytes of raw temp or press data */
 
 
 /* Calibration Data */
@@ -81,7 +81,6 @@ static uint32_t bmp280_compensate_P_int32(int32_t adc_P)
 
 BMP280_StatusTypeDef BMP280_Init(Bmp_280_Interface *device)
 {
-    uint8_t check = 0;
     uint8_t calib_buf[24] = {0}; /* MISRA C Compliance: Always initialize variables */
 
     if (device == NULL || device->bus_read == NULL || device->bus_write == NULL || device->bus_read_IT == NULL)
@@ -89,20 +88,8 @@ BMP280_StatusTypeDef BMP280_Init(Bmp_280_Interface *device)
         return BMP280_ERR_NULL_PTR;
     }
 
-    bmp_dev = device;
-
-    /* 1. Read the Chip ID to verify device presence */
-    if (bmp_dev->bus_read(bmp_dev->intf_ptr, BMP280_REG_ID, &check, 1) != 0)
-    {
-        return BMP280_ERR_I2C;
-    }
-
-    /* 2. Check if ID matches expected magic number */
-    if (check == BMP280_CHIP_ID_MAGIC)
-    {
-
         /* 3. Read 24 bytes of calibration data from NVM */
-        if (bmp_dev->bus_read(bmp_dev->intf_ptr, BMP280_REG_CALIB_START, calib_buf, 24) != 0)
+        if (device->bus_read(device->intf_ptr, BMP280_REG_CALIB_START, calib_buf, 24) != 0)
         {
             return BMP280_ERR_I2C;
         }
@@ -122,39 +109,20 @@ BMP280_StatusTypeDef BMP280_Init(Bmp_280_Interface *device)
         bmp280_calib.dig_P8 = (int16_t)((calib_buf[21] << 8) | calib_buf[20]);
         bmp280_calib.dig_P9 = (int16_t)((calib_buf[23] << 8) | calib_buf[22]);
 
-        /* 4. Configure Filter and Standby Time (Safe sleep enforcement inside) */
-        if (BMP280_SetConfig(BMP280_STANDBY_250_MS, BMP280_FILTER_COEFF_4) != BMP280_OK)
-        {
-            return BMP280_ERR_I2C;
-        }
-
-        /* 5. Set Oversampling */
-        if (BMP280_SetOversampling(BMP280_OSRS_T_1X, BMP280_OSRS_P_1X) != BMP280_OK)
-        {
-            return BMP280_ERR_I2C;
-        }
-
-        /* 6. Turn on the sensor (Normal Mode) */
-        if (BMP280_SetMode(BMP280_MODE_NORMAL) != BMP280_OK)
-        {
-            return BMP280_ERR_I2C;
-        }
-
         return BMP280_OK;
-    }
 
-    return BMP280_ERR_ID_MISMATCH;
+        
 }
 
-BMP280_StatusTypeDef BMP280_SetMode(uint8_t mode)
+BMP280_StatusTypeDef BMP280_SetMode(Bmp_280_Interface *device, uint8_t mode)
 {
     uint8_t data = 0;
-    if (bmp_dev == NULL)
+    if (device == NULL)
     {
         return BMP280_ERR_NULL_PTR;
     }
 
-    if (bmp_dev->bus_read(bmp_dev->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
+    if (device->bus_read(device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
     {
         return BMP280_ERR_I2C;
     }
@@ -162,22 +130,22 @@ BMP280_StatusTypeDef BMP280_SetMode(uint8_t mode)
     data &= ~BMP280_CTRL_MEAS_MODE_MSK;
     data |= mode;
 
-    if (bmp_dev->bus_write(bmp_dev->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
+    if (device->bus_write(device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
     {
         return BMP280_ERR_I2C;
     }
     return BMP280_OK;
 }
 
-BMP280_StatusTypeDef BMP280_SetOversampling(uint8_t osrs_t, uint8_t osrs_p)
+BMP280_StatusTypeDef BMP280_SetOversampling(Bmp_280_Interface *device, uint8_t osrs_t, uint8_t osrs_p)
 {
     uint8_t data = 0;
-    if (bmp_dev == NULL)
+    if (device == NULL)
     {
         return BMP280_ERR_NULL_PTR;
     }
 
-    if (bmp_dev->bus_read(bmp_dev->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
+    if (device->bus_read(device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
     {
         return BMP280_ERR_I2C;
     }
@@ -185,26 +153,26 @@ BMP280_StatusTypeDef BMP280_SetOversampling(uint8_t osrs_t, uint8_t osrs_p)
     data &= ~(BMP280_CTRL_MEAS_OSRS_T_MSK | BMP280_CTRL_MEAS_OSRS_P_MSK);
     data |= (osrs_t | osrs_p);
 
-    if (bmp_dev->bus_write(bmp_dev->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
+    if (device->bus_write(device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
     {
         return BMP280_ERR_I2C;
     }
     return BMP280_OK;
 }
 
-BMP280_StatusTypeDef BMP280_SetConfig(uint8_t standby_time, uint8_t filter)
+BMP280_StatusTypeDef BMP280_SetConfig(Bmp_280_Interface *device, uint8_t standby_time, uint8_t filter)
 {
     uint8_t ctrl_meas = 0;
     uint8_t config_data = 0;
     uint8_t current_mode = 0;
 
-    if (bmp_dev == NULL)
+    if (device == NULL)
     {
         return BMP280_ERR_NULL_PTR;
     }
 
     /* 1. Read current CTRL_MEAS to save mode */
-    if (bmp_dev->bus_read(bmp_dev->intf_ptr, BMP280_REG_CTRL_MEAS, &ctrl_meas, 1) != 0)
+    if (device->bus_read(device->intf_ptr, BMP280_REG_CTRL_MEAS, &ctrl_meas, 1) != 0)
     {
         return BMP280_ERR_I2C;
     }
@@ -214,21 +182,23 @@ BMP280_StatusTypeDef BMP280_SetConfig(uint8_t standby_time, uint8_t filter)
     if (current_mode != BMP280_MODE_SLEEP)
     {
         uint8_t sleep_mode_cmd = (ctrl_meas & ~BMP280_CTRL_MEAS_MODE_MSK) | BMP280_MODE_SLEEP;
-        if (bmp_dev->bus_write(bmp_dev->intf_ptr, BMP280_REG_CTRL_MEAS, &sleep_mode_cmd, 1) != 0)
+        if (device->bus_write(device->intf_ptr, BMP280_REG_CTRL_MEAS, &sleep_mode_cmd, 1) != 0)
         {
             return BMP280_ERR_I2C;
         }
+        return BMP280_OK;
     }
 
+
     /* 3. Write to CONFIG register */
-    if (bmp_dev->bus_read(bmp_dev->intf_ptr, BMP280_REG_CONFIG, &config_data, 1) != 0)
+    if (device->bus_read(device->intf_ptr, BMP280_REG_CONFIG, &config_data, 1) != 0)
     {
         return BMP280_ERR_I2C;
     }
     config_data &= ~(BMP280_CONFIG_T_SB_MSK | BMP280_CONFIG_FILTER_MSK);
     config_data |= (standby_time | filter);
 
-    if (bmp_dev->bus_write(bmp_dev->intf_ptr, BMP280_REG_CONFIG, &config_data, 1) != 0)
+    if (device->bus_write(device->intf_ptr, BMP280_REG_CONFIG, &config_data, 1) != 0)
     {
         return BMP280_ERR_I2C;
     }
@@ -236,7 +206,7 @@ BMP280_StatusTypeDef BMP280_SetConfig(uint8_t standby_time, uint8_t filter)
     /* 4. Restore original mode if necessary */
     if (current_mode != BMP280_MODE_SLEEP)
     {
-        if (bmp_dev->bus_write(bmp_dev->intf_ptr, BMP280_REG_CTRL_MEAS, &ctrl_meas, 1) != 0)
+        if (device->bus_write(device->intf_ptr, BMP280_REG_CTRL_MEAS, &ctrl_meas, 1) != 0)
         {
             return BMP280_ERR_I2C;
         }
@@ -245,9 +215,9 @@ BMP280_StatusTypeDef BMP280_SetConfig(uint8_t standby_time, uint8_t filter)
     return BMP280_OK;
 }
 
-BMP280_StatusTypeDef BMP280_ReadTemperature_IT(void)
+BMP280_StatusTypeDef BMP280_ReadTemperature_IT(Bmp_280_Interface *device)
 {
-    if (bmp_dev == NULL || bmp_dev->bus_read_IT == NULL)
+    if (device == NULL || device->bus_read_IT == NULL)
     {
         return BMP280_ERR_NULL_PTR;
     }
@@ -259,7 +229,7 @@ BMP280_StatusTypeDef BMP280_ReadTemperature_IT(void)
 
     bmp280_read_state = BMP280_READ_STATE_TEMP_BUSY;
 
-    if (bmp_dev->bus_read_IT(bmp_dev->intf_ptr, BMP280_REG_TEMP_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
+    if (device->bus_read_IT(device->intf_ptr, BMP280_REG_TEMP_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
     {
         bmp280_read_state = BMP280_READ_STATE_ERROR;
         return BMP280_ERR_I2C;
@@ -268,9 +238,9 @@ BMP280_StatusTypeDef BMP280_ReadTemperature_IT(void)
     return BMP280_OK;
 }
 
-BMP280_StatusTypeDef BMP280_ReadPressure_IT(void)
+BMP280_StatusTypeDef BMP280_ReadPressure_IT(Bmp_280_Interface *device)
 {
-    if (bmp_dev == NULL || bmp_dev->bus_read_IT == NULL)
+    if (device == NULL || device->bus_read_IT == NULL)
     {
         return BMP280_ERR_NULL_PTR;
     }
@@ -280,9 +250,7 @@ BMP280_StatusTypeDef BMP280_ReadPressure_IT(void)
         return BMP280_ERR_BUSY;
     }
 
-    bmp280_read_state = BMP280_READ_STATE_PRESS_BUSY;
-
-    if (bmp_dev->bus_read_IT(bmp_dev->intf_ptr, BMP280_REG_PRESS_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
+    if (device->bus_read_IT(device->intf_ptr, BMP280_REG_PRESS_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
     {
         bmp280_read_state = BMP280_READ_STATE_ERROR;
         return BMP280_ERR_I2C;
@@ -328,7 +296,7 @@ uint32_t BMP280_Convert_RawPressure(void)
     return 0;
 }
 
-void BMP280_RxCpltCallback(void)
+void BMP280_Rx_CpltCallback(void)
 {
     /* Strictly minimal ISR work: Just set the ready flag! */
     if (bmp280_read_state == BMP280_READ_STATE_TEMP_BUSY)

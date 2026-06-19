@@ -20,6 +20,7 @@
 #include "main.h"
 #include "dma.h"
 #include "i2c.h"
+#include "spi.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -28,9 +29,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "bmp.h"
+#include "bmp_280_SPI.h"
+#include <stdint.h>
 #include "uart_ring_buffer.h"
 #include "uart_dma_manager.h"
-#include "bmp_I2c.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,12 +53,21 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-volatile BMP280_StatusTypeDef bmp_status;
+Bmp_280_Interface bmp_device;
+SPI_BMP_CS_PIN cs_pin;
+BMP280_StatusTypeDef bmp_status;
 volatile int32_t temperature;
 volatile uint32_t pressure;
 uint32_t last_tick = 0;
 uint8_t read_step = 0;
 uint32_t test_counter = 0;
+#define BMP280_READ_INTERVAL_MS 1000
+uint8_t my_payload[100];
+
+/* Define Ring Buffers for UART DMA Manager */
+
+RingBuffer rx_ring_buffer;
+RingBuffer tx_ring_buffer;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,9 +82,9 @@ void SystemClock_Config(void);
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
 
@@ -102,85 +113,68 @@ int main(void)
   MX_DMA_Init();
   MX_I2C2_Init();
   MX_USART2_UART_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t device_address = BMP280_DEVICE_ADRESS;
-  Bmp_280_Interface bmp_interface;
-  bmp_status = BMP_I2C_Init(&bmp_interface, &device_address);
+  Bmp_280_Interface bmp_device;
+  SPI_BMP_CS_PIN cs_pin;
+  uint32_t last_tick = 0;
+  uint32_t test_counter = 0;
+  bmp_status = BMP280_SPI_Init(&bmp_device, &cs_pin);
+  bmp_status = BMP280_Init(&bmp_device);
+  bmp_status = BMP280_SetMode(&bmp_device, BMP280_MODE_NORMAL);
+  bmp_status = BMP280_SetOversampling(&bmp_device, BMP280_OSRS_T_2X, BMP280_OSRS_P_2X);
+  bmp_status = BMP280_SetConfig(&bmp_device, BMP280_STANDBY_250_MS, BMP280_FILTER_COEFF_4);
 
-  if (bmp_status == BMP280_OK)
-  {
-    /* Configure the sensor */
-    BMP280_SetOversampling(BMP280_OSRS_T_2X, BMP280_OSRS_P_16X);
-    BMP280_SetConfig(BMP280_STANDBY_250_MS, BMP280_FILTER_COEFF_4);
-    BMP280_SetMode(BMP280_MODE_NORMAL);
-  }
-  else
-  {
-    Error_Handler();
-  }
-  RingBuffer rx_buffer;
-  RingBuffer tx_buffer;
-  uint8_t payload[128];
+  /* 1. Initialize the Ring Buffers */
+  rb_init(&rx_ring_buffer);
+  rb_init(&tx_ring_buffer);
 
-  rb_init(&rx_buffer);
-  rb_init(&tx_buffer);
-  UART_Manager_Init(&huart2, &rx_buffer, &tx_buffer);
+  /* 2. Disable Hardware Flow Control */
+  UART_Manager_EnableSoftwareFlowControl(false); 
+
+  /* 3. Initialize the UART Manager */
+  if (UART_Manager_Init(&huart2, &rx_ring_buffer, &tx_ring_buffer) != HAL_OK)
+  {
+      Error_Handler(); 
+  }
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    test_counter++;
-    UART_Manager_Task();
-
-    switch (read_step)
+    if (HAL_GetTick() - last_tick >= BMP280_READ_INTERVAL_MS) // 1 second interval
     {
-    case 0:
-      // Запускаємо читання температури кожну секунду (неблокуюча затримка)
-      if (HAL_GetTick() - last_tick >= 1000)
-      {
-        last_tick = HAL_GetTick();
-        BMP280_ReadTemperature_IT();
-        read_step = 1;
+      last_tick = HAL_GetTick();
+      switch(read_step){
+        case 0:
+          bmp_status = BMP280_ReadTemperature_IT(&bmp_device);
+          read_step = 1;
+          break;
+        case 1:
+          temperature = BMP280_Convert_RawTemperature();
+          bmp_status = BMP280_ReadPressure_IT(&bmp_device);
+          read_step = 2;
+          break;
+        case 2:
+          pressure = BMP280_Convert_RawPressure();
+          read_step = 0;
+          test_counter++;
+          break;
       }
-      break;
-
-    case 1:
-      // Чекаємо завершення зчитування температури по перериванню I2C
-      if (BMP280_GetReadState() == BMP280_READ_STATE_TEMP_READY)
-      {
-        temperature = BMP280_Convert_RawTemperature(); // Температура в 0.01 градусах
-        BMP280_ReadPressure_IT();                      // Одразу запускаємо читання тиску
-        read_step = 2;
-      }
-      else if (BMP280_GetReadState() == BMP280_READ_STATE_ERROR)
-      {
-        read_step = 0; // У разі помилки повертаємось на початок
-      }
-      break;
-
-    case 2:
-      // Чекаємо завершення зчитування тиску по перериванню I2C
-      if (BMP280_GetReadState() == BMP280_READ_STATE_PRESS_READY)
-      {
-        pressure = BMP280_Convert_RawPressure(); // Тиск у Паскалях
-
-        // Форматуємо і відправляємо по UART
-        int len = snprintf((char *)payload, sizeof(payload),
-                           "Temp: %d.%02d C, Press: %lu Pa\r\n",
-                           (int)(temperature / 100), (int)(temperature % 100),
-                           (unsigned long)pressure);
-        rb_push_array(&tx_buffer, payload, len);
-
-        read_step = 0; // Повертаємось до очікування таймера
-      }
-      else if (BMP280_GetReadState() == BMP280_READ_STATE_ERROR)
-      {
-        read_step = 0;
-      }
-      break;
+      /* Використовуємо цілі числа замість float, щоб уникнути проблем з printf_float на STM32 */
+      snprintf((char*)my_payload, sizeof(my_payload), 
+      "Temp: %d.%02d C, Pressure: %lu.%02lu hPa\r\n", 
+      (int)(temperature / 100), (int)(temperature % 100), 
+      (uint32_t)(pressure / 100), (uint32_t)(pressure % 100));
+      
+      /* 4. Transmit data to UART */
+      rb_push_array(&tx_ring_buffer, my_payload, strlen((char*)my_payload));
     }
+    
+    /* 5. Call UART Manager task to process buffers */
+    UART_Manager_Task();
 
     /* USER CODE END WHILE */
 
@@ -190,22 +184,22 @@ int main(void)
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
-   */
+  */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
   /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
+  * in the RCC_OscInitTypeDef structure.
+  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -216,8 +210,9 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -234,15 +229,23 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
   if (hi2c->Instance == I2C2)
   {
-    BMP280_RxCpltCallback();
+      BMP280_Rx_CpltCallback();
+  }
+}
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+  if (hspi->Instance == SPI1)
+  {
+    BMP280_SPI_END_TRANSACTION(bmp_device.intf_ptr);
+    BMP280_Rx_CpltCallback();
   }
 }
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -255,12 +258,12 @@ void Error_Handler(void)
 }
 #ifdef USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */

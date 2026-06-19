@@ -8,6 +8,7 @@ CMakeFiles/
 CMakeScripts/
 cmake_install.cmake
 compile_commands.json
+project_specific_rules.md
 .cmake/
 
 # Зібрані об'єктні файли та прошивки

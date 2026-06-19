@@ -4,6 +4,7 @@
  */
 #include "bmp_I2c.h" 
 #include "i2c.h"
+#include <stdint.h>
 //ffdhffgufgue
 /* Згідно з bmp.h, функції мають повертати int8_t */
 
@@ -16,6 +17,11 @@ BMP280_StatusTypeDef BMP_I2C_Init(Bmp_280_Interface *bmp_device, void *device_ad
     bmp_device->bus_write = BMP280_I2C_Write;
     bmp_device->bus_read_IT = BMP280_I2C_Read_IT;
     bmp_device->intf_ptr = device_address;
+    uint8_t check = 0;
+    if (BMP280_I2C_Read((void*)device_address, BMP280_REG_ID, &check, 1) != BMP280_OK)
+    {
+        return BMP280_ERR_I2C;
+    }
     
     /* Call the main driver initialization immediately */
     return BMP280_Init(bmp_device);

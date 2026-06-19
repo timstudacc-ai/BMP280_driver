@@ -45,7 +45,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Знаходимо всі .c файли у вказаних папках автоматично
 file(GLOB USER_SOURCES CONFIGURE_DEPENDS
     "Core/BMP280/*.c"
-    "Core/UART_Manager/*.c"
+    "Core/BMP280/UART_Manager/*.c"
     "Core/Ring_buffer/*.c"
 )
 
@@ -59,9 +59,9 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     Core/BMP280
-    Core/UART_Manager
-    Core/Ring_buffer
+    Core/BMP280/UART_Manager
     Core/Inc
+    
 
 )
 

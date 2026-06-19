@@ -126,7 +126,8 @@ extern "C"
         BMP280_ERR_I2C = 0x01U,
         BMP280_ERR_ID_MISMATCH = 0x02U,
         BMP280_ERR_NULL_PTR = 0x03U,
-        BMP280_ERR_BUSY = 0x04U
+        BMP280_ERR_BUSY = 0x04U,
+        BMP280_ERR_SPI = 0x05U,
     } BMP280_StatusTypeDef;
 
     /**
@@ -191,28 +192,28 @@ extern "C"
     /**
      * @brief  Sets the sensor's power mode.
      */
-    BMP280_StatusTypeDef BMP280_SetMode(uint8_t mode);
+    BMP280_StatusTypeDef BMP280_SetMode(Bmp_280_Interface *device, uint8_t mode);
 
     /**
      * @brief  Sets the oversampling rates for temperature and pressure.
      */
-    BMP280_StatusTypeDef BMP280_SetOversampling(uint8_t osrs_t, uint8_t osrs_p);
+    BMP280_StatusTypeDef BMP280_SetOversampling(Bmp_280_Interface *device, uint8_t osrs_t, uint8_t osrs_p);
 
     /**
      * @brief  Sets the IIR filter coefficient and standby time.
      *         Enforces SLEEP mode constraint before writing to CONFIG.
      */
-    BMP280_StatusTypeDef BMP280_SetConfig(uint8_t standby_time, uint8_t filter);
+    BMP280_StatusTypeDef BMP280_SetConfig(Bmp_280_Interface *device, uint8_t standby_time, uint8_t filter);
 
     /**
      * @brief  Starts asynchronous reading of temperature.
      */
-    BMP280_StatusTypeDef BMP280_ReadTemperature_IT(void);
+    BMP280_StatusTypeDef BMP280_ReadTemperature_IT(Bmp_280_Interface *device);
 
     /**
      * @brief  Starts asynchronous reading of pressure.
      */
-    BMP280_StatusTypeDef BMP280_ReadPressure_IT(void);
+    BMP280_StatusTypeDef BMP280_ReadPressure_IT(Bmp_280_Interface *device);
 
     /**
      * @brief  Returns the current state of the asynchronous read operations.
@@ -234,7 +235,7 @@ extern "C"
     /**
      * @brief  RX Complete Callback to update state machine.
      */
-    void BMP280_RxCpltCallback(void);
+    void BMP280_Rx_CpltCallback(void);
 
     /* USER CODE END Prototypes */
 
