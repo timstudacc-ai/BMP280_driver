@@ -20,7 +20,7 @@ project_specific_rules.md
 *.map
 *.su
 *.a
-
+*.PDF
 # Резервні копії STM32CubeMX
 *.bak
 *.ioc.bak
