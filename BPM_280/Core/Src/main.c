@@ -133,17 +133,23 @@ int main(void)
       bmp_status = BMP280_ERR_SPI;
       Error_Handler();
   }
+
+  /* Inizialization order matters! The configuration should be done before setting the sensor in normal mode*/
+  if (BMP280_SetConfig(&bmp_device, BMP280_STANDBY_250_MS, BMP280_FILTER_COEFF_16) != BMP280_OK)
+  {
+      bmp_status = BMP280_ERR_SPI;
+      Error_Handler();
+  }
+
+  
+  if (BMP280_SetOversampling(&bmp_device, BMP280_OSRS_T_16X, BMP280_OSRS_P_16X) != BMP280_OK)
+  {
+      bmp_status = BMP280_ERR_SPI;
+      Error_Handler();
+  }
+
+  
   if( BMP280_SetMode(&bmp_device, BMP280_MODE_NORMAL) != BMP280_OK)
-  {
-      bmp_status = BMP280_ERR_SPI;
-      Error_Handler();
-  }
-  if (BMP280_SetOversampling(&bmp_device, BMP280_OSRS_T_2X, BMP280_OSRS_P_2X) != BMP280_OK)
-  {
-      bmp_status = BMP280_ERR_SPI;
-      Error_Handler();
-  }
-  if (BMP280_SetConfig(&bmp_device, BMP280_STANDBY_250_MS, BMP280_FILTER_COEFF_4) != BMP280_OK)
   {
       bmp_status = BMP280_ERR_SPI;
       Error_Handler();

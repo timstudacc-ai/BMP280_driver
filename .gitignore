@@ -10,7 +10,7 @@ cmake_install.cmake
 compile_commands.json
 project_specific_rules.md
 .cmake/
-
+.agents/
 # Зібрані об'єктні файли та прошивки
 *.o
 *.d
