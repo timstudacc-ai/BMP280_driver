@@ -190,62 +190,100 @@ extern "C"
 
 
     /**
-     * @brief  Initializes the BMP280 sensor via I2C (synchronous/blocking).
-     * @param  hi2c Pointer to a I2C_HandleTypeDef structure.
-     * @retval BMP280_StatusTypeDef status of the initialization.
+     * @brief  Initializes the BMP280 sensor and reads calibration data.
+     * @param  device Pointer to the BMP280 interface structure.
+     * @retval BMP280_StatusTypeDef Status of the initialization.
      */
     BMP280_StatusTypeDef BMP280_Init(Bmp_280_Interface *device);
 
     /**
-     * @brief  Sets the sensor's power mode.
+     * @brief  Sets the sensor's power mode (Sleep, Forced, or Normal).
+     * @param  device Pointer to the BMP280 interface structure.
+     * @param  mode Desired mode (e.g., BMP280_MODE_NORMAL).
+     * @retval BMP280_StatusTypeDef Status of the operation.
      */
     BMP280_StatusTypeDef BMP280_SetMode(Bmp_280_Interface *device, uint8_t mode);
 
     /**
      * @brief  Sets the oversampling rates for temperature and pressure.
+     * @param  device Pointer to the BMP280 interface structure.
+     * @param  osrs_t Temperature oversampling configuration.
+     * @param  osrs_p Pressure oversampling configuration.
+     * @retval BMP280_StatusTypeDef Status of the operation.
      */
     BMP280_StatusTypeDef BMP280_SetOversampling(Bmp_280_Interface *device, uint8_t osrs_t, uint8_t osrs_p);
 
     /**
      * @brief  Sets the IIR filter coefficient and standby time.
      *         Enforces SLEEP mode constraint before writing to CONFIG.
+     * @param  device Pointer to the BMP280 interface structure.
+     * @param  standby_time Standby time configuration (t_sb).
+     * @param  filter IIR filter coefficient.
+     * @retval BMP280_StatusTypeDef Status of the operation.
      */
     BMP280_StatusTypeDef BMP280_SetConfig(Bmp_280_Interface *device, uint8_t standby_time, uint8_t filter);
 
     /**
-     * @brief  Starts asynchronous reading of temperature.
+     * @brief  Starts asynchronous reading of temperature via Interrupts.
+     * @param  device Pointer to the BMP280 interface structure.
+     * @retval BMP280_StatusTypeDef Status of the operation.
      */
     BMP280_StatusTypeDef BMP280_ReadTemperature_IT(Bmp_280_Interface *device);
 
     /**
-     * @brief  Starts asynchronous reading of pressure.
+     * @brief  Starts asynchronous reading of pressure via Interrupts.
+     * @param  device Pointer to the BMP280 interface structure.
+     * @retval BMP280_StatusTypeDef Status of the operation.
      */
     BMP280_StatusTypeDef BMP280_ReadPressure_IT(Bmp_280_Interface *device);
 
+    /**
+     * @brief  Starts asynchronous reading of pressure via DMA.
+     * @param  device Pointer to the BMP280 interface structure.
+     * @retval BMP280_StatusTypeDef Status of the operation.
+     */
     BMP280_StatusTypeDef BMP280_ReadPressure_DMA(Bmp_280_Interface *device);
 
+    /**
+     * @brief  Starts asynchronous reading of temperature via DMA.
+     * @param  device Pointer to the BMP280 interface structure.
+     * @retval BMP280_StatusTypeDef Status of the operation.
+     */
     BMP280_StatusTypeDef BMP280_ReadTemperature_DMA(Bmp_280_Interface *device);
 
+    /**
+     * @brief  Non-blocking function to poll and retrieve the temperature.
+     * @param  device Pointer to the BMP280 interface structure.
+     * @param  temperature Pointer to variable where the result (in 0.01 DegC) will be stored.
+     * @retval BMP280_StatusTypeDef BMP280_OK if data is ready, BMP280_ERR_BUSY if still reading.
+     */
     BMP280_StatusTypeDef BMP280_Get_Temperature(Bmp_280_Interface *device, int32_t *temperature);
 
+    /**
+     * @brief  Non-blocking function to poll and retrieve the pressure.
+     * @param  device Pointer to the BMP280 interface structure.
+     * @param  pressure Pointer to variable where the result (in Pa) will be stored.
+     * @retval BMP280_StatusTypeDef BMP280_OK if data is ready, BMP280_ERR_BUSY if still reading.
+     */
     BMP280_StatusTypeDef BMP280_Get_Pressure(Bmp_280_Interface *device, uint32_t *pressure);
 
-
-
     /**
-     * @brief  Converts the raw temperature from the IT buffer into 0.01 DegC.
-     *         Must be called only when state is BMP280_READ_STATE_TEMP_READY.
+     * @brief  Converts the raw temperature from the internal buffer into 0.01 DegC.
+     *         Internal function called by BMP280_Get_Temperature.
+     * @retval int32_t Compensated temperature in 0.01 DegC format.
      */
     int32_t BMP280_Convert_RawTemperature(void);
 
     /**
-     * @brief  Converts the raw pressure from the IT buffer into Pascals.
-     *         Must be called only when state is BMP280_READ_STATE_PRESS_READY.
+     * @brief  Converts the raw pressure from the internal buffer into Pascals.
+     *         Internal function called by BMP280_Get_Pressure.
+     * @retval uint32_t Compensated pressure in Pascals format.
      */
     uint32_t BMP280_Convert_RawPressure(void);
 
     /**
-     * @brief  RX Complete Callback to update state machine.
+     * @brief  RX Complete Callback to update the internal state machine.
+     *         Should be called from the SPI/I2C RX Complete interrupt handler.
      */
     void BMP280_Rx_CpltCallback(void);
 
