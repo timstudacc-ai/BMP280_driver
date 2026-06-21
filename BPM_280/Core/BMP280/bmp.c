@@ -83,7 +83,7 @@ BMP280_StatusTypeDef BMP280_Init(Bmp_280_Interface *device)
 {
     uint8_t calib_buf[24] = {0}; /* MISRA C Compliance: Always initialize variables */
 
-    if (device == NULL || device->bus_read == NULL || device->bus_write == NULL || device->bus_read_IT == NULL)
+    if (device == NULL || device->bus_read == NULL || device->bus_write == NULL || device->bus_read_IT == NULL || device->bus_read_DMA == NULL)
     {
         return BMP280_ERR_NULL_PTR;
     }
@@ -217,7 +217,7 @@ BMP280_StatusTypeDef BMP280_SetConfig(Bmp_280_Interface *device, uint8_t standby
 
 BMP280_StatusTypeDef BMP280_ReadTemperature_IT(Bmp_280_Interface *device)
 {
-    if (device == NULL || device->bus_read_IT == NULL)
+    if (device == NULL || device->bus_read_IT == NULL || device->bus_read == NULL || device->bus_write == NULL || device->bus_read_DMA == NULL)
     {
         return BMP280_ERR_NULL_PTR;
     }
@@ -240,7 +240,7 @@ BMP280_StatusTypeDef BMP280_ReadTemperature_IT(Bmp_280_Interface *device)
 
 BMP280_StatusTypeDef BMP280_ReadPressure_IT(Bmp_280_Interface *device)
 {
-    if (device == NULL || device->bus_read_IT == NULL)
+    if (device == NULL || device->bus_read_IT == NULL || device->bus_read == NULL || device->bus_write == NULL || device->bus_read_DMA == NULL)
     {
         return BMP280_ERR_NULL_PTR;
     }
@@ -260,10 +260,49 @@ BMP280_StatusTypeDef BMP280_ReadPressure_IT(Bmp_280_Interface *device)
     return BMP280_OK;
 }
 
-BMP280_ReadStateTypeDef BMP280_GetReadState(void)
+BMP280_StatusTypeDef BMP280_ReadPressure_DMA(Bmp_280_Interface *device)
 {
-    return bmp280_read_state;
+    if (device == NULL || device->bus_read_DMA == NULL)
+    {
+        return BMP280_ERR_NULL_PTR;
+    }
+
+    if (bmp280_read_state == BMP280_READ_STATE_TEMP_BUSY || bmp280_read_state == BMP280_READ_STATE_PRESS_BUSY)
+    {
+        return BMP280_ERR_BUSY;
+    }
+    bmp280_read_state = BMP280_READ_STATE_PRESS_BUSY;
+
+    if (device->bus_read_DMA(device->intf_ptr, BMP280_REG_PRESS_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
+    {
+        bmp280_read_state = BMP280_READ_STATE_ERROR;
+        return BMP280_ERR_I2C;
+    }
+
+    return BMP280_OK;
 }
+BMP280_StatusTypeDef BMP280_ReadTemperature_DMA(Bmp_280_Interface *device)
+{
+    if (device == NULL || device->bus_read_DMA == NULL)
+    {
+        return BMP280_ERR_NULL_PTR;
+    }
+
+    if (bmp280_read_state == BMP280_READ_STATE_TEMP_BUSY || bmp280_read_state == BMP280_READ_STATE_PRESS_BUSY)
+    {
+        return BMP280_ERR_BUSY;
+    }
+    bmp280_read_state = BMP280_READ_STATE_TEMP_BUSY;
+
+    if (device->bus_read_DMA(device->intf_ptr, BMP280_REG_TEMP_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
+    {
+        bmp280_read_state = BMP280_READ_STATE_ERROR;
+        return BMP280_ERR_I2C;
+    }
+
+    return BMP280_OK;
+}
+
 
 int32_t BMP280_Convert_RawTemperature(void)
 {
@@ -295,6 +334,76 @@ uint32_t BMP280_Convert_RawPressure(void)
         return bmp280_compensate_P_int32(raw_val);
     }
     return 0;
+}
+
+BMP280_StatusTypeDef BMP280_Get_Temperature(Bmp_280_Interface *device, int32_t *temperature) {
+    if (device == NULL || temperature == NULL) {
+        return BMP280_ERR_NULL_PTR;
+    }
+
+    static uint8_t temp_read_step = 0;
+    BMP280_StatusTypeDef status;
+
+    switch (temp_read_step)
+    {
+    case 0:
+        status = BMP280_ReadTemperature_DMA(device);
+        if (status != BMP280_OK) {
+            return status;
+        }
+        temp_read_step = 1;
+        return BMP280_ERR_BUSY;
+    
+    case 1:
+        if (bmp280_read_state == BMP280_READ_STATE_TEMP_READY) {
+            *temperature = BMP280_Convert_RawTemperature(); /* Converts and resets state to IDLE */
+            temp_read_step = 0;
+            return BMP280_OK;
+        }
+        else if (bmp280_read_state == BMP280_READ_STATE_ERROR) {
+            temp_read_step = 0;
+            return BMP280_ERR_I2C;
+        }
+        return BMP280_ERR_BUSY;
+    }
+    
+    temp_read_step = 0;
+    return BMP280_ERR_BUSY;
+}
+
+BMP280_StatusTypeDef BMP280_Get_Pressure(Bmp_280_Interface *device, uint32_t *pressure) {
+    if (device == NULL || pressure == NULL) {
+        return BMP280_ERR_NULL_PTR;
+    }
+
+    static uint8_t press_read_step = 0;
+    BMP280_StatusTypeDef status;
+
+    switch (press_read_step)
+    {
+    case 0:
+        status = BMP280_ReadPressure_DMA(device);
+        if (status != BMP280_OK) {
+            return status;
+        }
+        press_read_step = 1;
+        return BMP280_ERR_BUSY;
+    
+    case 1:
+        if (bmp280_read_state == BMP280_READ_STATE_PRESS_READY) {
+            *pressure = BMP280_Convert_RawPressure(); /* Converts and resets state to IDLE */
+            press_read_step = 0;
+            return BMP280_OK;
+        }
+        else if (bmp280_read_state == BMP280_READ_STATE_ERROR) {
+            press_read_step = 0;
+            return BMP280_ERR_I2C;
+        }
+        return BMP280_ERR_BUSY;
+    }
+    
+    press_read_step = 0;
+    return BMP280_ERR_BUSY;
 }
 
 void BMP280_Rx_CpltCallback(void)

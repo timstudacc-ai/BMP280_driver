@@ -20,10 +20,16 @@ BMP280_StatusTypeDef BMP280_SPI_Write(void *intf_ptr, uint8_t reg_addr, uint8_t 
 
 BMP280_StatusTypeDef BMP280_SPI_Read_IT(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
+BMP280_StatusTypeDef BMP280_SPI_Read_DMA(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+
+BMP280_StatusTypeDef BMP280_SPI_Write_DMA(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+
 BMP280_StatusTypeDef BMP280_CS_PIN_INIT(SPI_BMP_CS_PIN *CS_PIN, GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
 
 BMP280_StatusTypeDef BMP280_SPI_START_TRANSACTION(void *intf_ptr);
 
 BMP280_StatusTypeDef BMP280_SPI_END_TRANSACTION(void *intf_ptr);    
+
+
 
 #endif /* _SPI_BMP280_H_ */

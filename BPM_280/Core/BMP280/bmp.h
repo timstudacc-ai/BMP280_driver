@@ -170,6 +170,11 @@ extern "C"
      * @brief Function pointer for synchronous writing
      */
     typedef BMP280_StatusTypeDef (*BMP280_Write_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+
+
+     typedef BMP280_StatusTypeDef (*BMP280_Read_DMA_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+
+     typedef BMP280_StatusTypeDef (*BMP280_Write_DMA_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
     
     /**
      * @brief Hardware abstraction interface structure
@@ -178,6 +183,8 @@ extern "C"
         BMP280_Read_func bus_read;
         BMP280_Write_func bus_write;
         BMP280_Read_func bus_read_IT;
+        BMP280_Read_DMA_func bus_read_DMA;
+        BMP280_Write_DMA_func bus_write_DMA;
         void *intf_ptr; 
     } Bmp_280_Interface;
 
@@ -215,10 +222,15 @@ extern "C"
      */
     BMP280_StatusTypeDef BMP280_ReadPressure_IT(Bmp_280_Interface *device);
 
-    /**
-     * @brief  Returns the current state of the asynchronous read operations.
-     */
-    BMP280_ReadStateTypeDef BMP280_GetReadState(void);
+    BMP280_StatusTypeDef BMP280_ReadPressure_DMA(Bmp_280_Interface *device);
+
+    BMP280_StatusTypeDef BMP280_ReadTemperature_DMA(Bmp_280_Interface *device);
+
+    BMP280_StatusTypeDef BMP280_Get_Temperature(Bmp_280_Interface *device, int32_t *temperature);
+
+    BMP280_StatusTypeDef BMP280_Get_Pressure(Bmp_280_Interface *device, uint32_t *pressure);
+
+
 
     /**
      * @brief  Converts the raw temperature from the IT buffer into 0.01 DegC.
