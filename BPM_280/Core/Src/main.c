@@ -26,13 +26,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
-#include <string.h>
-#include "bmp280.h"
-#include "bmp280_i2c.h"
-#include <stdint.h>
-#include "uart_ring_buffer.h"
-#include "uart_dma_manager.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,20 +47,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-BMP280_Interface bmp_device;
-uint8_t i2c_device_address = 0x76; /* Default I2C address for BMP280 */
-BMP280_StatusTypeDef bmp_status;
-int32_t temperature;
-uint32_t pressure;
-uint32_t last_tick = 0;
-uint8_t current_reading_state = 0; /* 0: idle, 1: reading temperature, 2: reading pressure */
-#define BMP280_READ_INTERVAL_MS 1000
-uint8_t my_payload[100];
 
-/* Define Ring Buffers for UART DMA Manager */
-
-RingBuffer rx_ring_buffer;
-RingBuffer tx_ring_buffer;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -114,47 +95,6 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  uint32_t last_tick = 0;
-
-  if (BMP280_I2C_Init(&bmp_device, &i2c_device_address) != BMP280_OK)
-  {
-    bmp_status = BMP280_ERR_I2C;
-    Error_Handler();
-  }
-
-  
-
-  /* Inizialization order matters! The configuration should be done before setting the sensor in normal mode*/
-  if (BMP280_Set_Config(&bmp_device, BMP280_STANDBY_250_MS, BMP280_FILTER_COEFF_16) != BMP280_OK)
-  {
-    bmp_status = BMP280_ERR_COMM;
-    Error_Handler();
-  }
-
-  if (BMP280_Set_Oversampling(&bmp_device, BMP280_OSRS_T_16X, BMP280_OSRS_P_16X) != BMP280_OK)
-  {
-    bmp_status = BMP280_ERR_COMM;
-    Error_Handler();
-  }
-
-  if (BMP280_Set_Mode(&bmp_device, BMP280_MODE_NORMAL) != BMP280_OK)
-  {
-    bmp_status = BMP280_ERR_COMM;
-    Error_Handler();
-  }
-
-  /* 1. Initialize the Ring Buffers */
-  rb_init(&rx_ring_buffer);
-  rb_init(&tx_ring_buffer);
-
-  /* 2. Disable Hardware Flow Control */
-  UART_Manager_EnableSoftwareFlowControl(false);
-
-  /* 3. Initialize the UART Manager */
-  if (UART_Manager_Init(&huart2, &rx_ring_buffer, &tx_ring_buffer) != HAL_OK)
-  {
-    Error_Handler();
-  }
 
   /* USER CODE END 2 */
 
@@ -162,44 +102,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    if (current_reading_state == 0) 
-    {
-      /* Очікуємо 1 секунду перед новим циклом вимірювань */
-      if (HAL_GetTick() - last_tick >= BMP280_READ_INTERVAL_MS)
-      {
-        current_reading_state = 1; /* Переходимо до температури */
-      }
-    }
-    else if (current_reading_state == 1) 
-    {
-      /* Постійно опитуємо температуру, поки вона не буде готова (це не блокує процесор!) */
-      if (BMP280_Get_Temperature(&bmp_device, &temperature) == BMP280_OK)
-      {
-        current_reading_state = 2; /* Температура є, переходимо до тиску */
-      }
-    }
-    else if (current_reading_state == 2) 
-    {
-      /* Постійно опитуємо тиск */
-      if (BMP280_Get_Pressure(&bmp_device, &pressure) == BMP280_OK)
-      {
-        /* Обидва параметри готові! Формуємо строку і відправляємо */
-        snprintf((char *)my_payload, sizeof(my_payload),
-                 "Temp: %d.%02d C, Pressure: %lu.%02lu hPa\r\n",
-                 (int)(temperature / 100), (int)(temperature % 100),
-                 (uint32_t)(pressure / 100), (uint32_t)(pressure % 100));
-
-        rb_push_array(&tx_ring_buffer, my_payload, strlen((char *)my_payload));
-
-        /* Повертаємося в режим очікування на 1 секунду */
-        current_reading_state = 0;
-        last_tick = HAL_GetTick(); 
-      }
-    }
-
-    /* UART Manager крутиться постійно при кожному проході while(1) */
-    UART_Manager_Task();
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
