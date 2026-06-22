@@ -6,7 +6,7 @@
 ![Protocol](https://img.shields.io/badge/Protocol-I2C%20%7C%20SPI-purple)
 
 ## 1. Project Overview
-This repository provides a highly optimized, non-blocking, bare-metal C driver for the Bosch BMP280 absolute barometric pressure and temperature sensor. It is designed specifically for STM32 microcontrollers utilizing the STM32CubeHAL framework. The objective of this project is to implement a robust, MISRA C compliant, and interrupt/DMA-driven sensor interface that seamlessly integrates into RTOS-based or super-loop architectures without blocking the main CPU execution.
+This repository provides a highly optimized, non-blocking, bare-metal C driver for the Bosch BMP280 absolute barometric pressure and temperature sensor. It is designed specifically for STM32 microcontrollers utilizing the STM32CubeHAL framework. The objective of this project is to implement a robust, MISRA C compliant, and interrupt/DMA-driven sensor interface that seamlessly integrates into super-loop architectures without blocking the main CPU execution.
 
 **Main Features:**
 - **Non-blocking Architecture:** Utilizes Interrupts (IT) and Direct Memory Access (DMA) for fast data transfers without CPU stalling.
@@ -35,8 +35,7 @@ graph TD
     end
 
     subgraph APP [4. Application Layer]
-        Main_Loop["main.c (Super Loop / RTOS)"]
-        UART_Manager["UART DMA Manager"]
+        Main_Loop["main.c (Super Loop)"]
     end
 
     %% Define Relationships Outside Subgraphs
@@ -48,7 +47,6 @@ graph TD
     Core_Logic --> I2C_Driver
     Core_Logic --> SPI_Driver
     Main_Loop --> Core_Logic
-    Main_Loop --> UART_Manager
 ```
 
 ## 3. Layer Overview
@@ -63,7 +61,7 @@ Acts as the Hardware Abstraction Layer (HAL) wrapper (`bmp280_i2c.c` / `bmp280_s
 Contains the core business logic (`bmp280.c`), register definitions, and mathematical compensation formulas required by the Bosch datasheet. This layer manages the sensor's internal state machine, parses raw ADC data, and calculates human-readable temperature and pressure values. It is completely isolated from direct hardware dependencies.
 
 ### 4. Application Layer
-The user's super-loop or RTOS task (`main.c`) that triggers sensor readings, checks the asynchronous reading states, and processes the final temperature and pressure data (e.g., formatting the payload and sending it over UART using a DMA manager).
+The user's super-loop task (`main.c`) that triggers sensor readings, checks the asynchronous reading states, and processes the final temperature and pressure data.
 
 ## 4. Hardware Configuration Guide
 
