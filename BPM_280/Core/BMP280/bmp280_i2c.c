@@ -59,6 +59,14 @@ BMP280_StatusTypeDef BMP280_I2C_Read(void *intf_ptr, uint8_t reg_addr, uint8_t *
     }
     return BMP280_ERR_I2C; /* Error */
 }
+/**
+ * @brief  Reads data from BMP280 via I2C using DMA mode
+ * @param  intf_ptr Pointer to the I2C address
+ * @param  reg_addr Register address to read from
+ * @param  data Pointer to the data buffer
+ * @param  len Number of bytes to read
+ * @retval BMP280_StatusTypeDef status of the operation
+ */
 BMP280_StatusTypeDef BMP280_I2C_Read_DMA(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
     /* Cast the generic pointer to uint8_t to get the device address */
