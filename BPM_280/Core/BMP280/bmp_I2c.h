@@ -45,4 +45,6 @@ BMP280_StatusTypeDef BMP280_I2C_Write(void *intf_ptr, uint8_t reg_addr, uint8_t 
  */
 BMP280_StatusTypeDef BMP280_I2C_Read_IT(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
+BMP280_StatusTypeDef BMP280_I2C_Read_DMA(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+
 #endif

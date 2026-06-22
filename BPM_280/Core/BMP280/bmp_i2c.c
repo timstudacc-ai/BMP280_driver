@@ -23,6 +23,8 @@ BMP280_StatusTypeDef BMP_I2C_Init(Bmp_280_Interface *bmp_device, void *device_ad
     bmp_device->bus_read = BMP280_I2C_Read;
     bmp_device->bus_write = BMP280_I2C_Write;
     bmp_device->bus_read_IT = BMP280_I2C_Read_IT;
+    bmp_device->bus_read_DMA = BMP280_I2C_Read_DMA;
+    bmp_device->bus_write_DMA = NULL; /* Not implemented for I2C */
     bmp_device->intf_ptr = device_address;
     
     uint8_t check = 0;
@@ -52,6 +54,18 @@ BMP280_StatusTypeDef BMP280_I2C_Read(void *intf_ptr, uint8_t reg_addr, uint8_t *
     
     /* Perform blocking I2C memory read with a 100ms timeout */
     if(HAL_I2C_Mem_Read(&hi2c2, (dev_addr << 1U), reg_addr, 1, data, len, 100) == HAL_OK)
+    {
+        return BMP280_OK; /* Success */
+    }
+    return BMP280_ERR_I2C; /* Error */
+}
+BMP280_StatusTypeDef BMP280_I2C_Read_DMA(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len)
+{
+    /* Cast the generic pointer to uint8_t to get the device address */
+    uint8_t dev_addr = (*(uint8_t*)intf_ptr);
+    
+    /* Perform DMA-based I2C memory */
+    if(HAL_I2C_Mem_Read_DMA(&hi2c2, (dev_addr << 1U), reg_addr, 1, data, len) == HAL_OK)
     {
         return BMP280_OK; /* Success */
     }

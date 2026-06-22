@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "bmp.h"
-#include "bmp_280_SPI.h"
+#include "bmp_I2c.h"
 #include <stdint.h>
 #include "uart_ring_buffer.h"
 #include "uart_dma_manager.h"
@@ -54,7 +54,7 @@
 
 /* USER CODE BEGIN PV */
 Bmp_280_Interface bmp_device;
-SPI_BMP_CS_PIN cs_pin;
+uint8_t i2c_device_address = 0x76; /* Default I2C address for BMP280 */
 BMP280_StatusTypeDef bmp_status;
 int32_t temperature;
 uint32_t pressure;
@@ -81,9 +81,9 @@ void SystemClock_Config(void);
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
 
@@ -115,39 +115,31 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   uint32_t last_tick = 0;
-  if (BMP280_CS_PIN_INIT(&cs_pin, GPIOB, GPIO_PIN_0) != BMP280_OK)
+
+  if (BMP_I2C_Init(&bmp_device, &i2c_device_address) != BMP280_OK)
   {
-    bmp_status = BMP280_ERR_SPI;
-    Error_Handler();
-  }
-  if (BMP280_SPI_Init(&bmp_device, &cs_pin) != BMP280_OK)
-  {
-    bmp_status = BMP280_ERR_SPI;
+    bmp_status = BMP280_ERR_I2C;
     Error_Handler();
   }
 
-  if (BMP280_Init(&bmp_device) != BMP280_OK)
-  {
-    bmp_status = BMP280_ERR_SPI;
-    Error_Handler();
-  }
+  
 
   /* Inizialization order matters! The configuration should be done before setting the sensor in normal mode*/
   if (BMP280_SetConfig(&bmp_device, BMP280_STANDBY_250_MS, BMP280_FILTER_COEFF_16) != BMP280_OK)
   {
-    bmp_status = BMP280_ERR_SPI;
+    bmp_status = BMP280_ERR_I2C;
     Error_Handler();
   }
 
   if (BMP280_SetOversampling(&bmp_device, BMP280_OSRS_T_16X, BMP280_OSRS_P_16X) != BMP280_OK)
   {
-    bmp_status = BMP280_ERR_SPI;
+    bmp_status = BMP280_ERR_I2C;
     Error_Handler();
   }
 
   if (BMP280_SetMode(&bmp_device, BMP280_MODE_NORMAL) != BMP280_OK)
   {
-    bmp_status = BMP280_ERR_SPI;
+    bmp_status = BMP280_ERR_I2C;
     Error_Handler();
   }
 
@@ -216,22 +208,22 @@ int main(void)
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
-   */
+  */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
   /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
+  * in the RCC_OscInitTypeDef structure.
+  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -242,8 +234,9 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -268,9 +261,9 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -283,12 +276,12 @@ void Error_Handler(void)
 }
 #ifdef USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
