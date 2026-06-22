@@ -1,8 +1,8 @@
 /**
- * @file bmp_i2c.c
+ * @file bmp280_i2c.c
  * @brief I2C porting layer implementation for BMP280 sensor
  */
-#include "bmp_I2c.h" 
+#include "bmp280_i2c.h" 
 #include "i2c.h"
 #include <stdint.h>
 
@@ -12,7 +12,7 @@
  * @param  device_address Pointer to the I2C device address (uint8_t)
  * @retval BMP280_StatusTypeDef status of the initialization
  */
-BMP280_StatusTypeDef BMP_I2C_Init(Bmp_280_Interface *bmp_device, void *device_address){
+BMP280_StatusTypeDef BMP280_I2C_Init(BMP280_Interface *bmp_device, void *device_address){
 
     /* Check for null pointers to avoid hard faults */
     if(bmp_device == NULL || device_address == NULL){
@@ -112,4 +112,13 @@ BMP280_StatusTypeDef BMP280_I2C_Read_IT(void *intf_ptr, uint8_t reg_addr, uint8_
         return BMP280_OK;
     }
     return BMP280_ERR_I2C;
+}
+
+
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
+{
+  if (hi2c->Instance == I2C2)
+  {
+    BMP280_RX_Cplt_Callback();
+  }
 }

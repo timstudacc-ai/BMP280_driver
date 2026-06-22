@@ -1,7 +1,7 @@
 #ifndef _SPI_BMP280_H_
 #define _SPI_BMP280_H_
 
-#include "bmp.h"
+#include "bmp280.h"
 #include "spi.h"
 
 /**
@@ -19,11 +19,11 @@
 /**
  * @brief Structure to define the Chip Select (CS) pin for the SPI interface.
  */
-typedef struct SPI_BMP_CS_PIN
+typedef struct
 {
     GPIO_TypeDef *GPIOx; /**< GPIO port for the CS pin */
     uint16_t GPIO_Pin;   /**< GPIO pin number for the CS pin */
-} SPI_BMP_CS_PIN;
+} BMP280_SPI_CS_Pin;
 
 /**
  * @brief Initializes the SPI interface for the BMP280 sensor.
@@ -31,7 +31,7 @@ typedef struct SPI_BMP_CS_PIN
  * @param CS_PIN Pointer to the CS pin configuration structure.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_Init(Bmp_280_Interface *bmp_device, SPI_BMP_CS_PIN *CS_PIN);
+BMP280_StatusTypeDef BMP280_SPI_Init(BMP280_Interface *bmp_device, BMP280_SPI_CS_Pin *CS_PIN);
 
 /**
  * @brief Performs a blocking SPI read operation.
@@ -90,20 +90,20 @@ BMP280_StatusTypeDef BMP280_SPI_Write_DMA(void *intf_ptr, uint8_t reg_addr, uint
  * @param GPIO_Pin GPIO pin number for the CS pin.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_CS_PIN_INIT(SPI_BMP_CS_PIN *CS_PIN, GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
+BMP280_StatusTypeDef BMP280_SPI_CS_Pin_Init(BMP280_SPI_CS_Pin *CS_PIN, GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
 
 /**
  * @brief Asserts the CS pin (pulls it low) to start an SPI transaction.
  * @param intf_ptr Pointer to the interface specific data (e.g., CS_PIN).
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_START_TRANSACTION(void *intf_ptr);
+BMP280_StatusTypeDef BMP280_SPI_Start_Transaction(void *intf_ptr);
 
 /**
  * @brief De-asserts the CS pin (pulls it high) to end an SPI transaction.
  * @param intf_ptr Pointer to the interface specific data (e.g., CS_PIN).
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_END_TRANSACTION(void *intf_ptr);    
+BMP280_StatusTypeDef BMP280_SPI_End_Transaction(void *intf_ptr);    
 
 #endif /* _SPI_BMP280_H_ */

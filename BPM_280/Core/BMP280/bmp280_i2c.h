@@ -1,11 +1,11 @@
 /**
- * @file bmp_I2c.h
+ * @file bmp280_i2c.h
  * @brief I2C porting layer for BMP280 sensor
  */
-#ifndef _BMP_I2C_H
-#define _BMP_I2C_H
+#ifndef _BMP280_I2C_H
+#define _BMP280_I2C_H
 
-#include "bmp.h"
+#include "bmp280.h"
 
 /**
  * @brief  Initializes the I2C interface for BMP280
@@ -13,7 +13,7 @@
  * @param  device_address Pointer to the I2C device address
  * @retval BMP280_StatusTypeDef status of the initialization
  */
-BMP280_StatusTypeDef BMP_I2C_Init(Bmp_280_Interface *bmp_device, void *device_address);
+BMP280_StatusTypeDef BMP280_I2C_Init(BMP280_Interface *bmp_device, void *device_address);
 
 /**
  * @brief  Reads data from BMP280 via I2C

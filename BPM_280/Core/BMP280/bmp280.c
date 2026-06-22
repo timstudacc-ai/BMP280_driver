@@ -1,8 +1,8 @@
 /**
- * @file bmp.c
+ * @file bmp280.c
  * @brief BMP280 Sensor Driver Implementation
  */
-#include "bmp.h"
+#include "bmp280.h"
 #include <stdint.h>
 #include <stddef.h>
 
@@ -98,7 +98,7 @@ static uint32_t bmp280_compensate_P_int32(int32_t adc_P)
  * @param  device Pointer to the BMP280 interface structure.
  * @retval BMP280_StatusTypeDef Status of the initialization.
  */
-BMP280_StatusTypeDef BMP280_Init(Bmp_280_Interface *device)
+BMP280_StatusTypeDef BMP280_Init(BMP280_Interface *device)
 {
     uint8_t calib_buf[24] = {0}; /* MISRA C Compliance: Always initialize variables */
 
@@ -111,7 +111,7 @@ BMP280_StatusTypeDef BMP280_Init(Bmp_280_Interface *device)
     /* Read 24 bytes of calibration data from NVM */
     if (device->bus_read(device->intf_ptr, BMP280_REG_CALIB_START, calib_buf, 24) != 0)
     {
-        return BMP280_ERR_I2C;
+        return BMP280_ERR_COMM;
     }
 
     /* Unpack Little-Endian calibration data into the calibration structure */
@@ -138,7 +138,7 @@ BMP280_StatusTypeDef BMP280_Init(Bmp_280_Interface *device)
  * @param  mode Power mode to set (e.g., BMP280_MODE_NORMAL).
  * @retval BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SetMode(Bmp_280_Interface *device, uint8_t mode)
+BMP280_StatusTypeDef BMP280_Set_Mode(BMP280_Interface *device, uint8_t mode)
 {
     uint8_t data = 0;
     if (device == NULL)
@@ -149,7 +149,7 @@ BMP280_StatusTypeDef BMP280_SetMode(Bmp_280_Interface *device, uint8_t mode)
     /* Read the current measurement control register */
     if (device->bus_read(device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
     {
-        return BMP280_ERR_I2C;
+        return BMP280_ERR_COMM;
     }
 
     /* Mask out the old mode and apply the new mode */
@@ -159,7 +159,7 @@ BMP280_StatusTypeDef BMP280_SetMode(Bmp_280_Interface *device, uint8_t mode)
     /* Write back the updated measurement control register */
     if (device->bus_write(device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
     {
-        return BMP280_ERR_I2C;
+        return BMP280_ERR_COMM;
     }
     return BMP280_OK;
 }
@@ -171,7 +171,7 @@ BMP280_StatusTypeDef BMP280_SetMode(Bmp_280_Interface *device, uint8_t mode)
  * @param  osrs_p Pressure oversampling configuration.
  * @retval BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SetOversampling(Bmp_280_Interface *device, uint8_t osrs_t, uint8_t osrs_p)
+BMP280_StatusTypeDef BMP280_Set_Oversampling(BMP280_Interface *device, uint8_t osrs_t, uint8_t osrs_p)
 {
     uint8_t data = 0;
     if (device == NULL)
@@ -182,7 +182,7 @@ BMP280_StatusTypeDef BMP280_SetOversampling(Bmp_280_Interface *device, uint8_t o
     /* Read current measurement control register */
     if (device->bus_read(device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
     {
-        return BMP280_ERR_I2C;
+        return BMP280_ERR_COMM;
     }
 
     /* Mask out the old oversampling settings and apply new ones */
@@ -192,7 +192,7 @@ BMP280_StatusTypeDef BMP280_SetOversampling(Bmp_280_Interface *device, uint8_t o
     /* Write back the updated settings */
     if (device->bus_write(device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
     {
-        return BMP280_ERR_I2C;
+        return BMP280_ERR_COMM;
     }
     return BMP280_OK;
 }
@@ -205,7 +205,7 @@ BMP280_StatusTypeDef BMP280_SetOversampling(Bmp_280_Interface *device, uint8_t o
  * @param  filter IIR filter coefficient.
  * @retval BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SetConfig(Bmp_280_Interface *device, uint8_t standby_time, uint8_t filter)
+BMP280_StatusTypeDef BMP280_Set_Config(BMP280_Interface *device, uint8_t standby_time, uint8_t filter)
 {
     uint8_t ctrl_meas = 0;
     uint8_t config_data = 0;
@@ -219,7 +219,7 @@ BMP280_StatusTypeDef BMP280_SetConfig(Bmp_280_Interface *device, uint8_t standby
     /* 1. Read current CTRL_MEAS to save mode */
     if (device->bus_read(device->intf_ptr, BMP280_REG_CTRL_MEAS, &ctrl_meas, 1) != 0)
     {
-        return BMP280_ERR_I2C;
+        return BMP280_ERR_COMM;
     }
     current_mode = ctrl_meas & BMP280_CTRL_MEAS_MODE_MSK;
 
@@ -229,14 +229,14 @@ BMP280_StatusTypeDef BMP280_SetConfig(Bmp_280_Interface *device, uint8_t standby
         uint8_t sleep_mode_cmd = (ctrl_meas & ~BMP280_CTRL_MEAS_MODE_MSK) | BMP280_MODE_SLEEP;
         if (device->bus_write(device->intf_ptr, BMP280_REG_CTRL_MEAS, &sleep_mode_cmd, 1) != 0)
         {
-            return BMP280_ERR_I2C;
+            return BMP280_ERR_COMM;
         }
     }
 
     /* 3. Read current CONFIG register */
     if (device->bus_read(device->intf_ptr, BMP280_REG_CONFIG, &config_data, 1) != 0)
     {
-        return BMP280_ERR_I2C;
+        return BMP280_ERR_COMM;
     }
     
     /* Apply new standby time and filter settings */
@@ -246,7 +246,7 @@ BMP280_StatusTypeDef BMP280_SetConfig(Bmp_280_Interface *device, uint8_t standby
     /* Write back to CONFIG register */
     if (device->bus_write(device->intf_ptr, BMP280_REG_CONFIG, &config_data, 1) != 0)
     {
-        return BMP280_ERR_I2C;
+        return BMP280_ERR_COMM;
     }
 
     /* 4. Restore original mode if necessary */
@@ -254,7 +254,7 @@ BMP280_StatusTypeDef BMP280_SetConfig(Bmp_280_Interface *device, uint8_t standby
     {
         if (device->bus_write(device->intf_ptr, BMP280_REG_CTRL_MEAS, &ctrl_meas, 1) != 0)
         {
-            return BMP280_ERR_I2C;
+            return BMP280_ERR_COMM;
         }
     }
 
@@ -266,7 +266,7 @@ BMP280_StatusTypeDef BMP280_SetConfig(Bmp_280_Interface *device, uint8_t standby
  * @param  device Pointer to the BMP280 interface structure.
  * @retval BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_ReadTemperature_IT(Bmp_280_Interface *device)
+BMP280_StatusTypeDef BMP280_Read_Temperature_IT(BMP280_Interface *device)
 {
     if (device == NULL || device->bus_read_IT == NULL)
     {
@@ -286,7 +286,7 @@ BMP280_StatusTypeDef BMP280_ReadTemperature_IT(Bmp_280_Interface *device)
     if (device->bus_read_IT(device->intf_ptr, BMP280_REG_TEMP_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
     {
         bmp280_read_state = BMP280_READ_STATE_ERROR;
-        return BMP280_ERR_I2C;
+        return BMP280_ERR_COMM;
     }
 
     return BMP280_OK;
@@ -297,7 +297,7 @@ BMP280_StatusTypeDef BMP280_ReadTemperature_IT(Bmp_280_Interface *device)
  * @param  device Pointer to the BMP280 interface structure.
  * @retval BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_ReadPressure_IT(Bmp_280_Interface *device)
+BMP280_StatusTypeDef BMP280_Read_Pressure_IT(BMP280_Interface *device)
 {
     if (device == NULL || device->bus_read_IT == NULL)
     {
@@ -317,7 +317,7 @@ BMP280_StatusTypeDef BMP280_ReadPressure_IT(Bmp_280_Interface *device)
     if (device->bus_read_IT(device->intf_ptr, BMP280_REG_PRESS_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
     {
         bmp280_read_state = BMP280_READ_STATE_ERROR;
-        return BMP280_ERR_I2C;
+        return BMP280_ERR_COMM;
     }
 
     return BMP280_OK;
@@ -328,7 +328,7 @@ BMP280_StatusTypeDef BMP280_ReadPressure_IT(Bmp_280_Interface *device)
  * @param  device Pointer to the BMP280 interface structure.
  * @retval BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_ReadPressure_DMA(Bmp_280_Interface *device)
+BMP280_StatusTypeDef BMP280_Read_Pressure_DMA(BMP280_Interface *device)
 {
     if (device == NULL || device->bus_read_DMA == NULL)
     {
@@ -348,7 +348,7 @@ BMP280_StatusTypeDef BMP280_ReadPressure_DMA(Bmp_280_Interface *device)
     if (device->bus_read_DMA(device->intf_ptr, BMP280_REG_PRESS_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
     {
         bmp280_read_state = BMP280_READ_STATE_ERROR;
-        return BMP280_ERR_I2C;
+        return BMP280_ERR_COMM;
     }
 
     return BMP280_OK;
@@ -359,7 +359,7 @@ BMP280_StatusTypeDef BMP280_ReadPressure_DMA(Bmp_280_Interface *device)
  * @param  device Pointer to the BMP280 interface structure.
  * @retval BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_ReadTemperature_DMA(Bmp_280_Interface *device)
+BMP280_StatusTypeDef BMP280_Read_Temperature_DMA(BMP280_Interface *device)
 {
     if (device == NULL || device->bus_read_DMA == NULL)
     {
@@ -379,7 +379,7 @@ BMP280_StatusTypeDef BMP280_ReadTemperature_DMA(Bmp_280_Interface *device)
     if (device->bus_read_DMA(device->intf_ptr, BMP280_REG_TEMP_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
     {
         bmp280_read_state = BMP280_READ_STATE_ERROR;
-        return BMP280_ERR_I2C;
+        return BMP280_ERR_COMM;
     }
 
     return BMP280_OK;
@@ -391,7 +391,7 @@ BMP280_StatusTypeDef BMP280_ReadTemperature_DMA(Bmp_280_Interface *device)
  *         Internal function called by BMP280_Get_Temperature.
  * @retval int32_t Compensated temperature in 0.01 DegC format.
  */
-int32_t BMP280_Convert_RawTemperature(void)
+int32_t BMP280_Convert_Raw_Temperature(void)
 {
     int32_t raw_val;
 
@@ -417,7 +417,7 @@ int32_t BMP280_Convert_RawTemperature(void)
  *         Internal function called by BMP280_Get_Pressure.
  * @retval uint32_t Compensated pressure in Pascals format.
  */
-uint32_t BMP280_Convert_RawPressure(void)
+uint32_t BMP280_Convert_Raw_Pressure(void)
 {
     int32_t raw_val;
 
@@ -446,7 +446,7 @@ uint32_t BMP280_Convert_RawPressure(void)
  * @param  temperature Pointer to variable where the result (in 0.01 DegC) will be stored.
  * @retval BMP280_StatusTypeDef BMP280_OK if data is ready, BMP280_ERR_BUSY if still reading.
  */
-BMP280_StatusTypeDef BMP280_Get_Temperature(Bmp_280_Interface *device, int32_t *temperature) {
+BMP280_StatusTypeDef BMP280_Get_Temperature(BMP280_Interface *device, int32_t *temperature) {
     if (device == NULL || temperature == NULL) {
         return BMP280_ERR_NULL_PTR;
     }
@@ -459,7 +459,7 @@ BMP280_StatusTypeDef BMP280_Get_Temperature(Bmp_280_Interface *device, int32_t *
     {
     case 0:
         /* Step 0: Initiate the DMA transaction */
-        status = BMP280_ReadTemperature_DMA(device);
+        status = BMP280_Read_Temperature_DMA(device);
         if (status != BMP280_OK) {
             return status;
         }
@@ -472,7 +472,7 @@ BMP280_StatusTypeDef BMP280_Get_Temperature(Bmp_280_Interface *device, int32_t *
         /* Step 1: Poll the internal state to see if DMA has finished */
         if (bmp280_read_state == BMP280_READ_STATE_TEMP_READY) {
             /* Data is ready, perform mathematical conversion */
-            *temperature = BMP280_Convert_RawTemperature(); /* Converts and resets state to IDLE */
+            *temperature = BMP280_Convert_Raw_Temperature(); /* Converts and resets state to IDLE */
             
             /* Reset the step counter for the next time this function is called */
             temp_read_step = 0;
@@ -481,7 +481,7 @@ BMP280_StatusTypeDef BMP280_Get_Temperature(Bmp_280_Interface *device, int32_t *
         else if (bmp280_read_state == BMP280_READ_STATE_ERROR) {
             /* A hardware error occurred during reading */
             temp_read_step = 0;
-            return BMP280_ERR_I2C;
+            return BMP280_ERR_COMM;
         }
         
         /* Still waiting for DMA to complete */
@@ -501,7 +501,7 @@ BMP280_StatusTypeDef BMP280_Get_Temperature(Bmp_280_Interface *device, int32_t *
  * @param  pressure Pointer to variable where the result (in Pa) will be stored.
  * @retval BMP280_StatusTypeDef BMP280_OK if data is ready, BMP280_ERR_BUSY if still reading.
  */
-BMP280_StatusTypeDef BMP280_Get_Pressure(Bmp_280_Interface *device, uint32_t *pressure) {
+BMP280_StatusTypeDef BMP280_Get_Pressure(BMP280_Interface *device, uint32_t *pressure) {
     if (device == NULL || pressure == NULL) {
         return BMP280_ERR_NULL_PTR;
     }
@@ -514,7 +514,7 @@ BMP280_StatusTypeDef BMP280_Get_Pressure(Bmp_280_Interface *device, uint32_t *pr
     {
     case 0:
         /* Step 0: Initiate the DMA transaction */
-        status = BMP280_ReadPressure_DMA(device);
+        status = BMP280_Read_Pressure_DMA(device);
         if (status != BMP280_OK) {
             return status;
         }
@@ -527,7 +527,7 @@ BMP280_StatusTypeDef BMP280_Get_Pressure(Bmp_280_Interface *device, uint32_t *pr
         /* Step 1: Poll the internal state to see if DMA has finished */
         if (bmp280_read_state == BMP280_READ_STATE_PRESS_READY) {
             /* Data is ready, perform mathematical conversion */
-            *pressure = BMP280_Convert_RawPressure(); /* Converts and resets state to IDLE */
+            *pressure = BMP280_Convert_Raw_Pressure(); /* Converts and resets state to IDLE */
             
             /* Reset the step counter for the next time this function is called */
             press_read_step = 0;
@@ -536,7 +536,7 @@ BMP280_StatusTypeDef BMP280_Get_Pressure(Bmp_280_Interface *device, uint32_t *pr
         else if (bmp280_read_state == BMP280_READ_STATE_ERROR) {
             /* A hardware error occurred during reading */
             press_read_step = 0;
-            return BMP280_ERR_I2C;
+            return BMP280_ERR_COMM;
         }
         
         /* Still waiting for DMA to complete */
@@ -552,7 +552,7 @@ BMP280_StatusTypeDef BMP280_Get_Pressure(Bmp_280_Interface *device, uint32_t *pr
  * @brief  RX Complete Callback to update the internal state machine.
  *         Should be called from the SPI/I2C RX Complete interrupt handler.
  */
-void BMP280_Rx_CpltCallback(void)
+void BMP280_RX_Cplt_Callback(void)
 {
     /* Strictly minimal ISR work: Just set the ready flag based on the current BUSY state! */
     if (bmp280_read_state == BMP280_READ_STATE_TEMP_BUSY)

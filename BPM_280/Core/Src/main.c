@@ -28,8 +28,8 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <string.h>
-#include "bmp.h"
-#include "bmp_I2c.h"
+#include "bmp280.h"
+#include "bmp280_i2c.h"
 #include <stdint.h>
 #include "uart_ring_buffer.h"
 #include "uart_dma_manager.h"
@@ -53,7 +53,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-Bmp_280_Interface bmp_device;
+BMP280_Interface bmp_device;
 uint8_t i2c_device_address = 0x76; /* Default I2C address for BMP280 */
 BMP280_StatusTypeDef bmp_status;
 int32_t temperature;
@@ -116,7 +116,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   uint32_t last_tick = 0;
 
-  if (BMP_I2C_Init(&bmp_device, &i2c_device_address) != BMP280_OK)
+  if (BMP280_I2C_Init(&bmp_device, &i2c_device_address) != BMP280_OK)
   {
     bmp_status = BMP280_ERR_I2C;
     Error_Handler();
@@ -125,21 +125,21 @@ int main(void)
   
 
   /* Inizialization order matters! The configuration should be done before setting the sensor in normal mode*/
-  if (BMP280_SetConfig(&bmp_device, BMP280_STANDBY_250_MS, BMP280_FILTER_COEFF_16) != BMP280_OK)
+  if (BMP280_Set_Config(&bmp_device, BMP280_STANDBY_250_MS, BMP280_FILTER_COEFF_16) != BMP280_OK)
   {
-    bmp_status = BMP280_ERR_I2C;
+    bmp_status = BMP280_ERR_COMM;
     Error_Handler();
   }
 
-  if (BMP280_SetOversampling(&bmp_device, BMP280_OSRS_T_16X, BMP280_OSRS_P_16X) != BMP280_OK)
+  if (BMP280_Set_Oversampling(&bmp_device, BMP280_OSRS_T_16X, BMP280_OSRS_P_16X) != BMP280_OK)
   {
-    bmp_status = BMP280_ERR_I2C;
+    bmp_status = BMP280_ERR_COMM;
     Error_Handler();
   }
 
-  if (BMP280_SetMode(&bmp_device, BMP280_MODE_NORMAL) != BMP280_OK)
+  if (BMP280_Set_Mode(&bmp_device, BMP280_MODE_NORMAL) != BMP280_OK)
   {
-    bmp_status = BMP280_ERR_I2C;
+    bmp_status = BMP280_ERR_COMM;
     Error_Handler();
   }
 
@@ -249,13 +249,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
-{
-  if (hi2c->Instance == I2C2)
-  {
-    BMP280_Rx_CpltCallback();
-  }
-}
 
 
 /* USER CODE END 4 */
