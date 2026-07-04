@@ -12,7 +12,7 @@
  * @param  device_address Pointer to the I2C device address (uint8_t)
  * @retval BMP280_StatusTypeDef status of the initialization
  */
-BMP280_StatusTypeDef BMP280_I2C_Init(BMP280_Interface *bmp_device, void *device_address){
+BMP280_StatusTypeDef BMP280_I2C_Init(BMP280_Interface *bmp_device, void *handle, void *device_address){
 
     /* Check for null pointers to avoid hard faults */
     if(bmp_device == NULL || device_address == NULL){
@@ -26,11 +26,12 @@ BMP280_StatusTypeDef BMP280_I2C_Init(BMP280_Interface *bmp_device, void *device_
     bmp_device->bus_read_DMA = BMP280_I2C_Read_DMA;
     bmp_device->bus_write_DMA = NULL; /* Not implemented for I2C */
     bmp_device->intf_ptr = device_address;
+    bmp_device->handle = handle;
     
     uint8_t check = 0;
     
     /* Verify communication by reading the device ID register */
-    if (BMP280_I2C_Read((void*)device_address, BMP280_REG_ID, &check, 1) != BMP280_OK)
+    if (BMP280_I2C_Read(handle, (void*)device_address, BMP280_REG_ID, &check, 1) != BMP280_OK)
     {
         return BMP280_ERR_I2C;
     }
@@ -47,13 +48,13 @@ BMP280_StatusTypeDef BMP280_I2C_Init(BMP280_Interface *bmp_device, void *device_
  * @param  len Number of bytes to read
  * @retval BMP280_StatusTypeDef status of the operation
  */
-BMP280_StatusTypeDef BMP280_I2C_Read(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len)
+BMP280_StatusTypeDef BMP280_I2C_Read(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
     /* Cast the generic pointer to uint8_t to get the device address */
     uint8_t dev_addr = (*(uint8_t*)intf_ptr);
     
     /* Perform blocking I2C memory read with a 100ms timeout */
-    if(HAL_I2C_Mem_Read(&hi2c2, (dev_addr << 1U), reg_addr, 1, data, len, 100) == HAL_OK)
+    if(HAL_I2C_Mem_Read((I2C_HandleTypeDef*)handle, (dev_addr << 1U), reg_addr, 1, data, len, 100) == HAL_OK)
     {
         return BMP280_OK; /* Success */
     }
@@ -67,13 +68,13 @@ BMP280_StatusTypeDef BMP280_I2C_Read(void *intf_ptr, uint8_t reg_addr, uint8_t *
  * @param  len Number of bytes to read
  * @retval BMP280_StatusTypeDef status of the operation
  */
-BMP280_StatusTypeDef BMP280_I2C_Read_DMA(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len)
+BMP280_StatusTypeDef BMP280_I2C_Read_DMA(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
     /* Cast the generic pointer to uint8_t to get the device address */
     uint8_t dev_addr = (*(uint8_t*)intf_ptr);
     
     /* Perform DMA-based I2C memory */
-    if(HAL_I2C_Mem_Read_DMA(&hi2c2, (dev_addr << 1U), reg_addr, 1, data, len) == HAL_OK)
+    if(HAL_I2C_Mem_Read_DMA((I2C_HandleTypeDef*)handle, (dev_addr << 1U), reg_addr, 1, data, len) == HAL_OK)
     {
         return BMP280_OK; /* Success */
     }
@@ -88,13 +89,13 @@ BMP280_StatusTypeDef BMP280_I2C_Read_DMA(void *intf_ptr, uint8_t reg_addr, uint8
  * @param  len Number of bytes to write
  * @retval BMP280_StatusTypeDef status of the operation
  */
-BMP280_StatusTypeDef BMP280_I2C_Write(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len)
+BMP280_StatusTypeDef BMP280_I2C_Write(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
     /* Cast the generic pointer to uint8_t to get the device address */
     uint8_t dev_addr = (*(uint8_t*)intf_ptr);
     
     /* Perform blocking I2C memory write with a 100ms timeout */
-    if(HAL_I2C_Mem_Write(&hi2c2, (dev_addr << 1U), reg_addr, 1, data, len, 100) == HAL_OK)
+    if(HAL_I2C_Mem_Write((I2C_HandleTypeDef*)handle, (dev_addr << 1U), reg_addr, 1, data, len, 100) == HAL_OK)
     {
         return BMP280_OK;
     }
@@ -109,13 +110,13 @@ BMP280_StatusTypeDef BMP280_I2C_Write(void *intf_ptr, uint8_t reg_addr, uint8_t 
  * @param  len Number of bytes to read
  * @retval BMP280_StatusTypeDef status of the operation
  */
-BMP280_StatusTypeDef BMP280_I2C_Read_IT(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len)
+BMP280_StatusTypeDef BMP280_I2C_Read_IT(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
     /* Cast the generic pointer to uint8_t to get the device address */
     uint8_t dev_addr = (*(uint8_t*)intf_ptr);
     
     /* Initiate a non-blocking I2C memory read using interrupts */
-    if(HAL_I2C_Mem_Read_IT(&hi2c2, (dev_addr << 1U), reg_addr, 1, data, len) == HAL_OK)
+    if(HAL_I2C_Mem_Read_IT((I2C_HandleTypeDef*)handle, (dev_addr << 1U), reg_addr, 1, data, len) == HAL_OK)
     {
         return BMP280_OK;
     }

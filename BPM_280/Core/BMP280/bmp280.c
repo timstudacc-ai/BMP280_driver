@@ -109,7 +109,7 @@ BMP280_StatusTypeDef BMP280_Init(BMP280_Interface *device)
     }
 
     /* Read 24 bytes of calibration data from NVM */
-    if (device->bus_read(device->intf_ptr, BMP280_REG_CALIB_START, calib_buf, 24) != 0)
+    if (device->bus_read(device->handle, device->intf_ptr, BMP280_REG_CALIB_START, calib_buf, 24) != 0)
     {
         return BMP280_ERR_COMM;
     }
@@ -147,7 +147,7 @@ BMP280_StatusTypeDef BMP280_Set_Mode(BMP280_Interface *device, uint8_t mode)
     }
 
     /* Read the current measurement control register */
-    if (device->bus_read(device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
+    if (device->bus_read(device->handle, device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
     {
         return BMP280_ERR_COMM;
     }
@@ -157,7 +157,7 @@ BMP280_StatusTypeDef BMP280_Set_Mode(BMP280_Interface *device, uint8_t mode)
     data |= mode;
 
     /* Write back the updated measurement control register */
-    if (device->bus_write(device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
+    if (device->bus_write(device->handle, device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
     {
         return BMP280_ERR_COMM;
     }
@@ -180,7 +180,7 @@ BMP280_StatusTypeDef BMP280_Set_Oversampling(BMP280_Interface *device, uint8_t o
     }
 
     /* Read current measurement control register */
-    if (device->bus_read(device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
+    if (device->bus_read(device->handle, device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
     {
         return BMP280_ERR_COMM;
     }
@@ -189,8 +189,8 @@ BMP280_StatusTypeDef BMP280_Set_Oversampling(BMP280_Interface *device, uint8_t o
     data &= ~(BMP280_CTRL_MEAS_OSRS_T_MSK | BMP280_CTRL_MEAS_OSRS_P_MSK);
     data |= (osrs_t | osrs_p);
 
-    /* Write back the updated settings */
-    if (device->bus_write(device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
+    /* Write back the updated config register */
+    if (device->bus_write(device->handle, device->intf_ptr, BMP280_REG_CTRL_MEAS, &data, 1) != 0)
     {
         return BMP280_ERR_COMM;
     }
@@ -217,7 +217,7 @@ BMP280_StatusTypeDef BMP280_Set_Config(BMP280_Interface *device, uint8_t standby
     }
 
     /* 1. Read current CTRL_MEAS to save mode */
-    if (device->bus_read(device->intf_ptr, BMP280_REG_CTRL_MEAS, &ctrl_meas, 1) != 0)
+    if (device->bus_read(device->handle, device->intf_ptr, BMP280_REG_CTRL_MEAS, &ctrl_meas, 1) != 0)
     {
         return BMP280_ERR_COMM;
     }
@@ -227,14 +227,14 @@ BMP280_StatusTypeDef BMP280_Set_Config(BMP280_Interface *device, uint8_t standby
     if (current_mode != BMP280_MODE_SLEEP)
     {
         uint8_t sleep_mode_cmd = (ctrl_meas & ~BMP280_CTRL_MEAS_MODE_MSK) | BMP280_MODE_SLEEP;
-        if (device->bus_write(device->intf_ptr, BMP280_REG_CTRL_MEAS, &sleep_mode_cmd, 1) != 0)
+        if (device->bus_write(device->handle, device->intf_ptr, BMP280_REG_CTRL_MEAS, &sleep_mode_cmd, 1) != 0)
         {
             return BMP280_ERR_COMM;
         }
     }
 
-    /* 3. Read current CONFIG register */
-    if (device->bus_read(device->intf_ptr, BMP280_REG_CONFIG, &config_data, 1) != 0)
+    /* Read the current config register */
+    if (device->bus_read(device->handle, device->intf_ptr, BMP280_REG_CONFIG, &config_data, 1) != 0)
     {
         return BMP280_ERR_COMM;
     }
@@ -244,7 +244,7 @@ BMP280_StatusTypeDef BMP280_Set_Config(BMP280_Interface *device, uint8_t standby
     config_data |= (standby_time | filter);
 
     /* Write back to CONFIG register */
-    if (device->bus_write(device->intf_ptr, BMP280_REG_CONFIG, &config_data, 1) != 0)
+    if (device->bus_write(device->handle, device->intf_ptr, BMP280_REG_CONFIG, &config_data, 1) != 0)
     {
         return BMP280_ERR_COMM;
     }
@@ -252,7 +252,7 @@ BMP280_StatusTypeDef BMP280_Set_Config(BMP280_Interface *device, uint8_t standby
     /* 4. Restore original mode if necessary */
     if (current_mode != BMP280_MODE_SLEEP)
     {
-        if (device->bus_write(device->intf_ptr, BMP280_REG_CTRL_MEAS, &ctrl_meas, 1) != 0)
+        if (device->bus_write(device->handle, device->intf_ptr, BMP280_REG_CTRL_MEAS, &ctrl_meas, 1) != 0)
         {
             return BMP280_ERR_COMM;
         }
@@ -282,8 +282,8 @@ BMP280_StatusTypeDef BMP280_Read_Temperature_IT(BMP280_Interface *device)
     /* Mark state as busy for temperature */
     bmp280_read_state = BMP280_READ_STATE_TEMP_BUSY;
 
-    /* Initiate non-blocking read */
-    if (device->bus_read_IT(device->intf_ptr, BMP280_REG_TEMP_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
+    /* Start an interrupt-based read of the 3 temperature registers */
+    if (device->bus_read_IT(device->handle, device->intf_ptr, BMP280_REG_TEMP_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
     {
         bmp280_read_state = BMP280_READ_STATE_ERROR;
         return BMP280_ERR_COMM;
@@ -313,8 +313,8 @@ BMP280_StatusTypeDef BMP280_Read_Pressure_IT(BMP280_Interface *device)
     /* Mark state as busy for pressure */
     bmp280_read_state = BMP280_READ_STATE_PRESS_BUSY;
 
-    /* Initiate non-blocking read */
-    if (device->bus_read_IT(device->intf_ptr, BMP280_REG_PRESS_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
+    /* Start an interrupt-based read of the 3 pressure registers */
+    if (device->bus_read_IT(device->handle, device->intf_ptr, BMP280_REG_PRESS_MSB, (uint8_t *)bmp280_data_buffer, 3) != 0)
     {
         bmp280_read_state = BMP280_READ_STATE_ERROR;
         return BMP280_ERR_COMM;
@@ -344,8 +344,8 @@ BMP280_StatusTypeDef BMP280_Read_Pressure_DMA(BMP280_Interface *device)
     /* Mark state as busy for pressure */
     bmp280_read_state = BMP280_READ_STATE_PRESS_BUSY;
 
-    /* Initiate non-blocking read via DMA */
-    if (device->bus_read_DMA(device->intf_ptr, BMP280_REG_PRESS_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
+    /* Start a DMA-based read of the 3 pressure registers */
+    if (device->bus_read_DMA(device->handle, device->intf_ptr, BMP280_REG_PRESS_MSB, (uint8_t *)bmp280_data_buffer, 3) != 0)
     {
         bmp280_read_state = BMP280_READ_STATE_ERROR;
         return BMP280_ERR_COMM;
@@ -375,8 +375,8 @@ BMP280_StatusTypeDef BMP280_Read_Temperature_DMA(BMP280_Interface *device)
     /* Mark state as busy for temperature */
     bmp280_read_state = BMP280_READ_STATE_TEMP_BUSY;
 
-    /* Initiate non-blocking read via DMA */
-    if (device->bus_read_DMA(device->intf_ptr, BMP280_REG_TEMP_MSB, (uint8_t *)bmp280_data_buffer, 3U) != 0)
+    /* Start a DMA-based read of the 3 temperature registers */
+    if (device->bus_read_DMA(device->handle, device->intf_ptr, BMP280_REG_TEMP_MSB, (uint8_t *)bmp280_data_buffer, 3) != 0)
     {
         bmp280_read_state = BMP280_READ_STATE_ERROR;
         return BMP280_ERR_COMM;

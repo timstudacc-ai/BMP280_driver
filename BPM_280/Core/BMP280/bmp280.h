@@ -165,17 +165,17 @@ extern "C"
     /**
      * @brief Function pointer for synchronous reading
      */
-    typedef BMP280_StatusTypeDef (*BMP280_Read_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+    typedef BMP280_StatusTypeDef (*BMP280_Read_func) (void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
     
     /**
      * @brief Function pointer for synchronous writing
      */
-    typedef BMP280_StatusTypeDef (*BMP280_Write_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+    typedef BMP280_StatusTypeDef (*BMP280_Write_func) (void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
 
-     typedef BMP280_StatusTypeDef (*BMP280_Read_DMA_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+     typedef BMP280_StatusTypeDef (*BMP280_Read_DMA_func) (void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
-     typedef BMP280_StatusTypeDef (*BMP280_Write_DMA_func) (void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+     typedef BMP280_StatusTypeDef (*BMP280_Write_DMA_func) (void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
     
     /**
      * @brief Hardware abstraction interface structure
@@ -187,6 +187,7 @@ extern "C"
         BMP280_Read_DMA_func bus_read_DMA;
         BMP280_Write_DMA_func bus_write_DMA;
         void *intf_ptr; 
+        void *handle;
     } BMP280_Interface;
 
 

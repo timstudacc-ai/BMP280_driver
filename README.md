@@ -70,6 +70,9 @@ The user's super-loop task (`main.c`) that triggers sensor readings, checks the 
 | **I2C** | Speed (SCL Frequency) | Standard Mode (100 kHz) or Fast Mode (400 kHz) |
 | **I2C** | Device Address | `0x76` (SDO = GND) or `0x77` (SDO = VDD) |
 | **I2C** | Pull-up Resistors | External 4.7kΩ - 10kΩ on SDA and SCL |
+| **I2C DMA RX** | Stream / Channel | `DMA1_Stream2` / `Channel 7` |
+| **I2C DMA RX** | Direction | `Peripheral to Memory` |
+| **I2C DMA RX** | Priority | `Low` |
 | **SPI** | Frame Format | Motorola |
 | **SPI** | Data Size | 8 Bits |
 | **SPI** | First Bit | MSB First |
@@ -114,7 +117,7 @@ int main(void) {
     MX_I2C2_Init();
 
     /* 1. Initialize the I2C porting layer */
-    if (BMP280_I2C_Init(&bmp_device, &i2c_address) != BMP280_OK) {
+    if (BMP280_I2C_Init(&bmp_device, &hi2c2, &i2c_address) != BMP280_OK) {
         Error_Handler();
     }
 

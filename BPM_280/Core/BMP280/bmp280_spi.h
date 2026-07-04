@@ -31,7 +31,7 @@ typedef struct
  * @param CS_PIN Pointer to the CS pin configuration structure.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_Init(BMP280_Interface *bmp_device, BMP280_SPI_CS_Pin *CS_PIN);
+BMP280_StatusTypeDef BMP280_SPI_Init(BMP280_Interface *bmp_device, void *handle, BMP280_SPI_CS_Pin *CS_PIN);
 
 /**
  * @brief Performs a blocking SPI read operation.
@@ -41,7 +41,7 @@ BMP280_StatusTypeDef BMP280_SPI_Init(BMP280_Interface *bmp_device, BMP280_SPI_CS
  * @param len Number of bytes to read.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_Read(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+BMP280_StatusTypeDef BMP280_SPI_Read(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
 /**
  * @brief Performs a blocking SPI write operation.
@@ -51,7 +51,7 @@ BMP280_StatusTypeDef BMP280_SPI_Read(void *intf_ptr, uint8_t reg_addr, uint8_t *
  * @param len Number of bytes to write.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_Write(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+BMP280_StatusTypeDef BMP280_SPI_Write(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
 /**
  * @brief Performs a non-blocking SPI read operation using Interrupts.
@@ -61,7 +61,7 @@ BMP280_StatusTypeDef BMP280_SPI_Write(void *intf_ptr, uint8_t reg_addr, uint8_t 
  * @param len Number of bytes to read.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_Read_IT(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+BMP280_StatusTypeDef BMP280_SPI_Read_IT(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
 /**
  * @brief Performs a non-blocking SPI read operation using DMA.
@@ -71,7 +71,7 @@ BMP280_StatusTypeDef BMP280_SPI_Read_IT(void *intf_ptr, uint8_t reg_addr, uint8_
  * @param len Number of bytes to read.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_Read_DMA(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+BMP280_StatusTypeDef BMP280_SPI_Read_DMA(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
 /**
  * @brief Performs a non-blocking SPI write operation using DMA.
@@ -81,7 +81,7 @@ BMP280_StatusTypeDef BMP280_SPI_Read_DMA(void *intf_ptr, uint8_t reg_addr, uint8
  * @param len Number of bytes to write.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_Write_DMA(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+BMP280_StatusTypeDef BMP280_SPI_Write_DMA(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
 /**
  * @brief Initializes the CS pin structure.

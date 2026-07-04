@@ -13,7 +13,7 @@
  * @param  device_address Pointer to the I2C device address
  * @retval BMP280_StatusTypeDef status of the initialization
  */
-BMP280_StatusTypeDef BMP280_I2C_Init(BMP280_Interface *bmp_device, void *device_address);
+BMP280_StatusTypeDef BMP280_I2C_Init(BMP280_Interface *bmp_device, void *handle, void *device_address);
 
 /**
  * @brief  Reads data from BMP280 via I2C
@@ -23,7 +23,7 @@ BMP280_StatusTypeDef BMP280_I2C_Init(BMP280_Interface *bmp_device, void *device_
  * @param  len Number of bytes to read
  * @retval BMP280_StatusTypeDef status of the operation
  */
-BMP280_StatusTypeDef BMP280_I2C_Read(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+BMP280_StatusTypeDef BMP280_I2C_Read(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
 /**
  * @brief  Writes data to BMP280 via I2C
@@ -33,7 +33,7 @@ BMP280_StatusTypeDef BMP280_I2C_Read(void *intf_ptr, uint8_t reg_addr, uint8_t *
  * @param  len Number of bytes to write
  * @retval BMP280_StatusTypeDef status of the operation
  */
-BMP280_StatusTypeDef BMP280_I2C_Write(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+BMP280_StatusTypeDef BMP280_I2C_Write(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
 /**
  * @brief  Reads data from BMP280 via I2C in non-blocking mode (Interrupt)
@@ -43,8 +43,8 @@ BMP280_StatusTypeDef BMP280_I2C_Write(void *intf_ptr, uint8_t reg_addr, uint8_t 
  * @param  len Number of bytes to read
  * @retval BMP280_StatusTypeDef status of the operation
  */
-BMP280_StatusTypeDef BMP280_I2C_Read_IT(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+BMP280_StatusTypeDef BMP280_I2C_Read_IT(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
-BMP280_StatusTypeDef BMP280_I2C_Read_DMA(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+BMP280_StatusTypeDef BMP280_I2C_Read_DMA(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
 #endif

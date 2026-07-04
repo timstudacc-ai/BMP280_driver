@@ -15,7 +15,7 @@ static void *current_cs_pin = NULL;
  * @param CS_PIN Pointer to the SPI Chip Select pin structure.
  * @return BMP280_StatusTypeDef Status of the initialization (BMP280_OK if successful).
  */
-BMP280_StatusTypeDef BMP280_SPI_Init(BMP280_Interface *bmp_device, BMP280_SPI_CS_Pin *CS_PIN){
+BMP280_StatusTypeDef BMP280_SPI_Init(BMP280_Interface *bmp_device, void *handle, BMP280_SPI_CS_Pin *CS_PIN){
     /* Check for null pointers to prevent hard faults */
     if(bmp_device == NULL || CS_PIN == NULL){
         return BMP280_ERR_SPI;
@@ -30,6 +30,7 @@ BMP280_StatusTypeDef BMP280_SPI_Init(BMP280_Interface *bmp_device, BMP280_SPI_CS
     
     /* Store the CS pin hardware configuration into the interface pointer */
     bmp_device->intf_ptr = CS_PIN;
+    bmp_device->handle = handle;
     
     /* Cache the CS pin globally for interrupt handlers */
     current_cs_pin = CS_PIN; 
@@ -101,7 +102,7 @@ BMP280_StatusTypeDef BMP280_SPI_End_Transaction(void *intf_ptr){
  * @param len Length of the data payload in bytes.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_Write(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len){
+BMP280_StatusTypeDef BMP280_SPI_Write(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len){
     if (intf_ptr == NULL || data == NULL) {
         return BMP280_ERR_NULL_PTR;
     }
@@ -112,12 +113,12 @@ BMP280_StatusTypeDef BMP280_SPI_Write(void *intf_ptr, uint8_t reg_addr, uint8_t 
     }
     
     /* Transmit the register address with the write bit (MSB = 0) */
-    if (HAL_SPI_Transmit(&hspi1, (uint8_t[]){BMP280_SPI_WRITE(reg_addr)}, 1, 100) != HAL_OK) {
+    if (HAL_SPI_Transmit((SPI_HandleTypeDef*)handle, (uint8_t[]){BMP280_SPI_WRITE(reg_addr)}, 1, 100) != HAL_OK) {
         return BMP280_ERR_SPI;
     }
     
     /* Transmit the actual payload sequentially */
-    if (HAL_SPI_Transmit(&hspi1, data, len, 100) != HAL_OK) {
+    if (HAL_SPI_Transmit((SPI_HandleTypeDef*)handle, data, len, 100) != HAL_OK) {
         return BMP280_ERR_SPI;
     }
     
@@ -134,7 +135,7 @@ BMP280_StatusTypeDef BMP280_SPI_Write(void *intf_ptr, uint8_t reg_addr, uint8_t 
  * @param len Length of data to read in bytes.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_Read(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len){
+BMP280_StatusTypeDef BMP280_SPI_Read(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len){
     if (intf_ptr == NULL || data == NULL) {
         return BMP280_ERR_NULL_PTR;
     }
@@ -145,12 +146,12 @@ BMP280_StatusTypeDef BMP280_SPI_Read(void *intf_ptr, uint8_t reg_addr, uint8_t *
     }
     
     /* Transmit the register address with the read bit (MSB = 1) */
-    if (HAL_SPI_Transmit(&hspi1, (uint8_t[]){BMP280_SPI_READ(reg_addr)}, 1, 100) != HAL_OK) {
+    if (HAL_SPI_Transmit((SPI_HandleTypeDef*)handle, (uint8_t[]){BMP280_SPI_READ(reg_addr)}, 1, 100) != HAL_OK) {
         return BMP280_ERR_SPI;
     }
     
     /* Receive the data payload sequentially */
-    if (HAL_SPI_Receive(&hspi1, data, len, 100) != HAL_OK) {
+    if (HAL_SPI_Receive((SPI_HandleTypeDef*)handle, data, len, 100) != HAL_OK) {
         return BMP280_ERR_SPI;
     }
     
@@ -167,7 +168,7 @@ BMP280_StatusTypeDef BMP280_SPI_Read(void *intf_ptr, uint8_t reg_addr, uint8_t *
  * @param len Length of data to read in bytes.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_Read_IT(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len){
+BMP280_StatusTypeDef BMP280_SPI_Read_IT(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len){
     if (intf_ptr == NULL || data == NULL) {
         return BMP280_ERR_NULL_PTR;
     }
@@ -178,12 +179,12 @@ BMP280_StatusTypeDef BMP280_SPI_Read_IT(void *intf_ptr, uint8_t reg_addr, uint8_
     }
     
     /* Transmit the register address in blocking mode first */
-    if (HAL_SPI_Transmit(&hspi1, (uint8_t[]){BMP280_SPI_READ(reg_addr)}, 1, 100) != HAL_OK) {
+    if (HAL_SPI_Transmit((SPI_HandleTypeDef*)handle, (uint8_t[]){BMP280_SPI_READ(reg_addr)}, 1, 100) != HAL_OK) {
         return BMP280_ERR_SPI;
     }
     
     /* Initiate the non-blocking receive via Interrupts */
-    if (HAL_SPI_Receive_IT(&hspi1, data, len) != HAL_OK) {
+    if (HAL_SPI_Receive_IT((SPI_HandleTypeDef*)handle, data, len) != HAL_OK) {
         return BMP280_ERR_SPI;
     }
     
@@ -199,7 +200,7 @@ BMP280_StatusTypeDef BMP280_SPI_Read_IT(void *intf_ptr, uint8_t reg_addr, uint8_
  * @param len Length of data to read in bytes.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_Read_DMA(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len){
+BMP280_StatusTypeDef BMP280_SPI_Read_DMA(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len){
     if (intf_ptr == NULL || data == NULL) {
         return BMP280_ERR_NULL_PTR;
     }
@@ -210,12 +211,12 @@ BMP280_StatusTypeDef BMP280_SPI_Read_DMA(void *intf_ptr, uint8_t reg_addr, uint8
     }
     
     /* Transmit the register address in blocking mode to prepare the bus */
-    if (HAL_SPI_Transmit(&hspi1, (uint8_t[]){BMP280_SPI_READ(reg_addr)}, 1,100) != HAL_OK) {
+    if (HAL_SPI_Transmit((SPI_HandleTypeDef*)handle, (uint8_t[]){BMP280_SPI_READ(reg_addr)}, 1,100) != HAL_OK) {
         return BMP280_ERR_SPI;
     }
     
     /* Initiate the fast non-blocking receive via DMA */
-    if (HAL_SPI_Receive_DMA(&hspi1, data, len) != HAL_OK) {
+    if (HAL_SPI_Receive_DMA((SPI_HandleTypeDef*)handle, data, len) != HAL_OK) {
         return BMP280_ERR_SPI;
     }
     
@@ -231,7 +232,7 @@ BMP280_StatusTypeDef BMP280_SPI_Read_DMA(void *intf_ptr, uint8_t reg_addr, uint8
  * @param len Length of the data payload in bytes.
  * @return BMP280_StatusTypeDef Status of the operation.
  */
-BMP280_StatusTypeDef BMP280_SPI_Write_DMA(void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len){
+BMP280_StatusTypeDef BMP280_SPI_Write_DMA(void *handle, void *intf_ptr, uint8_t reg_addr, uint8_t *data, uint16_t len){
     if (intf_ptr == NULL || data == NULL) {
         return BMP280_ERR_NULL_PTR;
     }
@@ -242,12 +243,12 @@ BMP280_StatusTypeDef BMP280_SPI_Write_DMA(void *intf_ptr, uint8_t reg_addr, uint
     }
     
     /* Transmit the register address in blocking mode */
-    if (HAL_SPI_Transmit(&hspi1, (uint8_t[]){BMP280_SPI_WRITE(reg_addr)}, 1,100) != HAL_OK) {
+    if (HAL_SPI_Transmit((SPI_HandleTypeDef*)handle, (uint8_t[]){BMP280_SPI_WRITE(reg_addr)}, 1,100) != HAL_OK) {
         return BMP280_ERR_SPI;
     }
     
     /* Initiate the fast non-blocking write via DMA */
-    if (HAL_SPI_Transmit_DMA(&hspi1, data, len) != HAL_OK) {
+    if (HAL_SPI_Transmit_DMA((SPI_HandleTypeDef*)handle, data, len) != HAL_OK) {
         return BMP280_ERR_SPI;
     }
     
